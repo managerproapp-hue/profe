@@ -37,9 +37,22 @@ export interface Student {
   anotaciones?: Annotation[];
 }
 
+export interface Product {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  unit: string;
+  allergens: string[];
+}
+
+
 export type NavItemType = 
   | 'Alumnos' 
   | 'Gestión Práctica' 
   | 'Gestión de Notas' 
-  | 'Gestión Académica' 
+  | 'Gestión Académica'
+  | 'Cocina'
   | 'Gestión de la App';
+
+export type CocinaSubView = 'Productos' | 'Pedidos' | 'Fichas Técnicas' | 'Creación de Menús';

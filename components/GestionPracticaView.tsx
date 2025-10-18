@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Student } from '../types';
 import { UsersIcon, GroupIcon, ServiceIcon, CalendarIcon, TrashIcon, CloseIcon, CogIcon, PlusIcon, PencilIcon, CheckIcon, XIcon } from './icons';
 
@@ -496,20 +496,21 @@ const PartidasYGruposTab: React.FC<{
   const [filter, setFilter] = useState('');
 
   const handleAssignmentChange = (studentNre: string, group: string) => {
-    if (group === 'Sin grupo') {
-        const student = students.find(s => s.nre === studentNre);
-        const studentName = student ? `${student.nombre} ${student.apellido1}` : 'este alumno';
-        if (window.confirm(`¿Estás seguro de que quieres quitar a ${studentName} de su grupo actual?`)) {
-            setStudentGroupAssignments(prev => {
-                const newAssignments = { ...prev };
-                delete newAssignments[studentNre];
-                return newAssignments;
-            });
-        }
-    } else {
-        setStudentGroupAssignments(prev => ({ ...prev, [studentNre]: group }));
+    setStudentGroupAssignments(prev => ({ ...prev, [studentNre]: group }));
+  };
+
+  const handleRemoveFromGroup = (studentNre: string) => {
+    const student = students.find(s => s.nre === studentNre);
+    const studentName = student ? `${student.nombre} ${student.apellido1}` : 'este alumno';
+    if (window.confirm(`¿Estás seguro de que quieres quitar a ${studentName} de su grupo actual?`)) {
+        setStudentGroupAssignments(prev => {
+            const newAssignments = { ...prev };
+            delete newAssignments[studentNre];
+            return newAssignments;
+        });
     }
   };
+
 
   const handleAddNewGroup = () => {
     const newGroupName = `Grupo ${practicaGroups.length + 1}`;
@@ -542,11 +543,11 @@ const PartidasYGruposTab: React.FC<{
                     <p className="text-sm text-gray-500">{student.grupo}</p>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <select value={studentGroupAssignments[student.nre] || 'Sin grupo'} onChange={(e) => handleAssignmentChange(student.nre, e.target.value)} className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-teal-500">
-                      <option value="Sin grupo">Sin grupo</option>
+                    <select value={studentGroupAssignments[student.nre] || ''} onChange={(e) => handleAssignmentChange(student.nre, e.target.value)} className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-teal-500">
+                      <option value="" disabled>Sin grupo</option>
                       {practicaGroups.map(g => <option key={g} value={g}>{g}</option>)}
                     </select>
-                    <button onClick={() => handleAssignmentChange(student.nre, 'Sin grupo')} title="Quitar de cualquier grupo" className="text-gray-400 hover:text-red-600"><TrashIcon className="h-5 w-5" /></button>
+                    <button onClick={() => handleRemoveFromGroup(student.nre)} title="Quitar de cualquier grupo" className="text-gray-400 hover:text-red-600"><TrashIcon className="h-5 w-5" /></button>
                   </div>
                 </div>
               </div>
@@ -579,7 +580,7 @@ const PartidasYGruposTab: React.FC<{
                         <img src={member.photoUrl || `https://i.pravatar.cc/150?u=${member.nre}`} alt="" className="h-8 w-8 rounded-full flex-shrink-0" />
                         <span className="text-sm font-medium truncate">{member.nombre} {member.apellido1}</span>
                       </div>
-                      <button onClick={() => handleAssignmentChange(member.nre, 'Sin grupo')} title="Quitar del grupo" className="text-gray-400 hover:text-red-500 ml-2"><CloseIcon className="h-4 w-4" /></button>
+                      <button onClick={() => handleRemoveFromGroup(member.nre)} title="Quitar del grupo" className="text-gray-400 hover:text-red-500 ml-2"><CloseIcon className="h-4 w-4" /></button>
                     </div>
                   )) : <p className="text-sm text-gray-500 italic">No hay alumnos en este grupo.</p>}
                 </div>
@@ -652,7 +653,7 @@ const GestionPracticaView: React.FC<GestionPracticaViewProps> = ({ students }) =
 
   }, [students]);
 
-  const handleDeleteService = (serviceId: string) => {
+  const handleDeleteService = useCallback((serviceId: string) => {
     if (window.confirm("¿Seguro que quieres eliminar este servicio? Esta acción también borrará todas las asignaciones de roles asociadas.")) {
         setServices(prevServices => prevServices.filter(s => s.id !== serviceId));
         setPlanningAssignments(prevAssignments => {
@@ -663,9 +664,9 @@ const GestionPracticaView: React.FC<GestionPracticaViewProps> = ({ students }) =
             return newAssignments;
         });
     }
-  };
+  }, [setServices, setPlanningAssignments]);
 
-  const handleDeleteGroup = (groupToDelete: string) => {
+  const handleDeleteGroup = useCallback((groupToDelete: string) => {
       if (window.confirm(`¿Estás seguro de que quieres eliminar el grupo "${groupToDelete}"? Los alumnos asignados pasarán a "Sin grupo" y el grupo se eliminará de todos los servicios.`)) {
           
           setStudentGroupAssignments(prev => {
@@ -697,7 +698,7 @@ const GestionPracticaView: React.FC<GestionPracticaViewProps> = ({ students }) =
               return newColors;
           });
       }
-  };
+  }, [setStudentGroupAssignments, setServices, setPracticaGroups, setGroupColors]);
   
   // Ensure initial colors are set for existing groups
   useEffect(() => {
@@ -712,7 +713,7 @@ const GestionPracticaView: React.FC<GestionPracticaViewProps> = ({ students }) =
     if (updated) {
         setGroupColors(newColors);
     }
-  }, [practicaGroups]);
+  }, [practicaGroups, groupColors]);
 
 
   const renderContent = () => {

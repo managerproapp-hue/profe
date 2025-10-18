@@ -84,5 +84,10 @@ export const NAV_ITEMS: NavItemType[] = [
   'Gestión Práctica',
   'Gestión de Notas',
   'Gestión Académica',
+  'Cocina',
   'Gestión de la App',
 ];
+
+export const PRODUCT_CATEGORIES = ['Carnes', 'Pescados', 'Lácteos', 'Verduras', 'Frutas', 'Cereales', 'Bebidas', 'Otros'];
+export const PRODUCT_UNITS = ['kg', 'litro', 'unidad', 'gramo', 'mililitro', 'manojo'];
+export const ALLERGENS = ['Gluten', 'Lactosa', 'Frutos Secos', 'Pescado', 'Huevo', 'Soja', 'Marisco', 'Apio', 'Mostaza', 'Sésamo', 'Sulfitos', 'Altramuces', 'Moluscos'];
