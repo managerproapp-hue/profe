@@ -205,9 +205,9 @@ const MiRecetarioView: React.FC<MiRecetarioViewProps> = ({ products, setProducts
 
 // --- Child Components for MiRecetarioView ---
 
+// FIX: The props for the icon element were not correctly typed, causing an error with cloneElement. The props are passed to a wrapper that sets the className.
 const CreateButton: React.FC<{ icon: React.ReactElement<{ className?: string }>, label: string, onClick: () => void }> = ({ icon, label, onClick }) => (
     <button onClick={onClick} className="flex flex-col items-center justify-center gap-2 p-3 bg-gray-50 hover:bg-teal-50 border border-gray-200 hover:border-teal-300 rounded-lg transition-colors text-sm font-semibold text-gray-700 hover:text-teal-800">
-        {/* FIX: The props for the icon element were not correctly typed, causing an error with cloneElement. The props are passed to a wrapper that sets the className. */}
         {React.cloneElement(icon, { className: "h-6 w-6" })}
         <span>{label}</span>
     </button>

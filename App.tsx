@@ -5,6 +5,8 @@ import AlumnosView from './components/AlumnosView';
 import Login from './components/Login';
 import { Student, NavItemType } from './types';
 import { INITIAL_STUDENTS } from './constants';
+// FIX: The file 'components/GestionPracticaView.tsx' was not a module, likely because it was empty.
+// I have created a placeholder component to resolve this import error.
 import GestionPracticaView from './components/GestionPracticaView';
 import CocinaView from './components/CocinaView';
 import GestionAppView from './components/GestionAppView';

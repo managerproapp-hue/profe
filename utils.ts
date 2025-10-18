@@ -30,3 +30,17 @@ export const parseQuantity = (quantityStr: string): { value: number; unit: strin
     const value = parseFloat(sanitizedStr);
     return { value: isNaN(value) ? 0 : value, unit: 'unidad' };
 };
+
+export const scaleQuantity = (quantityStr: string, factor: number): string => {
+    if (factor === 1 || !quantityStr) {
+        return quantityStr;
+    }
+    const parsed = parseQuantity(quantityStr);
+    if (isNaN(parsed.value) || parsed.value === 0) {
+        return quantityStr; // Cannot scale non-numeric or zero quantities
+    }
+    const newValue = parsed.value * factor;
+    // Simple formatting: if it's not a whole number, fix to 2 decimal places.
+    const formattedValue = newValue % 1 === 0 ? newValue : parseFloat(newValue.toFixed(2));
+    return `${formattedValue} ${parsed.unit}`;
+};

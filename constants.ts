@@ -1,3 +1,5 @@
+
+// FIX: Replaced circular import with a correct import from the new types.ts file.
 import { Student, NavItemType, Product, FullRecipe } from './types';
 import { uuidv4 } from './utils';
 
@@ -126,7 +128,9 @@ export const normalizeCategory = (cat: string): string => {
 };
 
 
-const RAW_PRODUCTS: Array<Omit<Product, 'price' | 'allergens'> & {allergens: string[]}> = [
+// FIX: The original type for RAW_PRODUCTS was incorrect as it omitted the `id` property, which exists in the data.
+// Changed to `Omit<Product, 'price'>` which correctly types the raw product data as having all Product properties except for 'price'.
+const RAW_PRODUCTS: Array<Omit<Product, 'price'>> = [
   {"id":"prod_0001","name":"Solomillo de ternera","category":"carnes","unit":"kg","allergens":[]},
   {"id":"prod_0002","name":"Entrecot de buey","category":"carnes","unit":"kg","allergens":[]},
   {"id":"prod_0003","name":"Filete de ternera","category":"carnes","unit":"kg","allergens":[]},
@@ -642,8 +646,11 @@ const RAW_PRODUCTS: Array<Omit<Product, 'price' | 'allergens'> & {allergens: str
 
 export const INITIAL_PRODUCTS: Product[] = RAW_PRODUCTS.map(p => ({
   ...p,
+  id: p.id,
+  name: p.name,
   price: parseFloat((Math.random() * 20 + 1).toFixed(2)),
   category: normalizeCategory(p.category),
+  unit: p.unit,
   allergens: p.allergens.map(code => ALLERGEN_MAP[code] || code).filter(Boolean)
 }));
 
