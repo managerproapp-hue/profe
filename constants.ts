@@ -92,7 +92,7 @@ export const PRODUCT_CATEGORIES = ['Carnes', 'Pescados', 'Mariscos', 'Lácteos',
 export const PRODUCT_UNITS = ['kg', 'litro', 'unidad', 'gramo', 'mililitro', 'manojo'];
 export const ALLERGENS = ['Gluten', 'Lactosa', 'Frutos Secos', 'Pescado', 'Huevo', 'Soja', 'Marisco', 'Apio', 'Mostaza', 'Sésamo', 'Sulfitos', 'Altramuces', 'Moluscos', 'Cacahuete'];
 
-const ALLERGEN_MAP: { [key: string]: string } = {
+export const ALLERGEN_MAP: { [key: string]: string } = {
   HUE: 'Huevo',
   GLU: 'Gluten',
   PES: 'Pescado',
@@ -108,7 +108,7 @@ const ALLERGEN_MAP: { [key: string]: string } = {
   LAC: 'Lactosa',
 };
 
-const normalizeCategory = (cat: string): string => {
+export const normalizeCategory = (cat: string): string => {
     const mapping: { [key: string]: string } = {
         carnes: 'Carnes',
         pescados: 'Pescados',
