@@ -56,3 +56,16 @@ export type NavItemType =
   | 'Gestión de la App';
 
 export type CocinaSubView = 'Productos' | 'Pedidos' | 'Fichas Técnicas' | 'Creación de Menús';
+
+export interface TeacherData {
+  name: string;
+  email: string;
+  logo?: string | null;
+}
+
+export interface InstituteData {
+  name: string;
+  address: string;
+  cif: string;
+  logo?: string | null;
+}

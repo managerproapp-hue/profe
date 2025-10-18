@@ -7,6 +7,7 @@ import { Student, NavItemType } from './types';
 import { INITIAL_STUDENTS } from './constants';
 import GestionPracticaView from './components/GestionPracticaView';
 import CocinaView from './components/CocinaView';
+import GestionAppView from './components/GestionAppView';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -33,9 +34,10 @@ const App: React.FC = () => {
         return <GestionPracticaView students={students} />;
       case 'Cocina':
         return <CocinaView />;
+      case 'Gestión de la App':
+        return <GestionAppView />;
       case 'Gestión de Notas':
       case 'Gestión Académica':
-      case 'Gestión de la App':
         return (
           <div className="p-8">
             <h1 className="text-3xl font-bold text-gray-800">{activeView}</h1>

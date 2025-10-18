@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Product } from '../types';
 import { PRODUCT_CATEGORIES, PRODUCT_UNITS, ALLERGENS } from '../constants';
-import { PlusIcon, PencilIcon, TrashIcon, UploadIcon, DownloadIcon } from './icons';
+import { PlusIcon, PencilIcon, TrashIcon, UploadIcon, DownloadIcon, CheckIcon, XIcon } from './icons';
 
 // Simple UUID generator
 const uuidv4 = () => {
@@ -238,28 +238,42 @@ const CatalogoProductosView: React.FC = () => {
                      </div>
                      <div className="flex flex-col sm:flex-row gap-2 mb-4">
                         <button onClick={() => fileInputRef.current?.click()} className="flex-1 flex justify-center items-center gap-2 p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm disabled:bg-gray-400 disabled:cursor-not-allowed" disabled={!!stagedForImport}>
-                            <UploadIcon className="h-4 w-4" style={{marginRight: '0.5rem'}}/> Subir JSON
+                            <UploadIcon className="h-4 w-4 mr-2"/> Subir JSON
                         </button>
                         <input type="file" ref={fileInputRef} onChange={handleImportJson} accept=".json" className="hidden" />
 
                         <button onClick={handleExportJson} className="flex-1 flex justify-center items-center gap-2 p-2 bg-green-500 text-white rounded-md hover:bg-green-600 text-sm">
-                             <DownloadIcon className="h-4 w-4" style={{marginRight: '0.5rem'}}/> Exportar Catálogo
+                             <DownloadIcon className="h-4 w-4 mr-2"/> Exportar Catálogo
                         </button>
                     </div>
 
                     {stagedForImport && (
-                        <div className="bg-blue-50 border-2 border-dashed border-blue-200 p-3 rounded-md mb-4 text-sm transition-all duration-300">
-                            <p className="font-semibold text-blue-800">Archivo listo para importar:</p>
-                            <p className="text-blue-700 my-1">
-                                <span className="font-medium">{stagedForImport.fileName}</span> contiene <span className="font-bold">{stagedForImport.products.length}</span> nuevos productos.
-                            </p>
-                            <div className="flex justify-end gap-2 mt-2">
-                                <button onClick={handleCancelImport} className="px-3 py-1 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 text-xs font-semibold">
-                                    Cancelar
-                                </button>
-                                <button onClick={handleConfirmImport} className="px-3 py-1 bg-blue-500 text-white font-bold rounded-md hover:bg-blue-600 text-xs">
-                                    Confirmar y Guardar
-                                </button>
+                        <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4">
+                            <div className="bg-white rounded-lg shadow-xl w-full max-w-lg transform transition-all">
+                                <div className="p-6 border-b border-gray-200">
+                                    <h3 className="text-xl font-bold text-gray-800">Confirmar Importación</h3>
+                                </div>
+                                <div className="p-6 space-y-2">
+                                    <p className="text-gray-700">
+                                        El archivo <span className="font-semibold text-blue-600">{stagedForImport.fileName}</span> ha sido procesado.
+                                    </p>
+                                    <p className="text-lg">
+                                        Se encontraron <span className="font-bold text-teal-600">{stagedForImport.products.length}</span> nuevos productos para añadir al catálogo.
+                                    </p>
+                                    <p className="mt-2 text-sm text-gray-500">
+                                        Los productos existentes con el mismo nombre serán ignorados. ¿Deseas guardar estos cambios?
+                                    </p>
+                                </div>
+                                <div className="bg-gray-50 p-4 flex justify-end items-center space-x-4 rounded-b-lg">
+                                    <button onClick={handleCancelImport} className="flex items-center gap-1 px-6 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 font-semibold">
+                                        <XIcon className="h-5 w-5 mr-1" />
+                                        Cancelar
+                                    </button>
+                                    <button onClick={handleConfirmImport} className="flex items-center gap-1 px-6 py-2 bg-teal-500 text-white font-bold rounded-md hover:bg-teal-600">
+                                        <CheckIcon className="h-5 w-5 mr-1" />
+                                        Guardar Cambios
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )}
