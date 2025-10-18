@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Student } from '../types';
-import { UsersIcon, GroupIcon, ServiceIcon, CalendarIcon, TrashIcon, CloseIcon, CogIcon, PlusIcon, PencilIcon, CheckIcon, XIcon } from './icons';
+import { Student, Service, Order, Product } from '../types';
+import { UsersIcon, GroupIcon, ServiceIcon, CalendarIcon, TrashIcon, CloseIcon, CogIcon, PlusIcon, PencilIcon, CheckIcon, XIcon, ShoppingCartIcon } from './icons';
+import FichaServicioModal from './FichaServicioModal';
+import GestionPedidosTab from './GestionPedidosTab';
 
 // --- HELPER FUNCTION ---
 const safeJsonParse = <T,>(key: string, defaultValue: T): T => {
@@ -20,17 +22,6 @@ const safeJsonParse = <T,>(key: string, defaultValue: T): T => {
 
 
 // --- DATA TYPES ---
-interface Service {
-  id: string;
-  name: string;
-  date: string;
-  trimestre: number;
-  groupAssignments: {
-    comedor: string[];
-    takeaway: string[];
-  };
-  menu?: string;
-}
 type StudentGroupAssignments = Record<string, string>; // { [studentNre]: groupName }
 type PlanningAssignments = Record<string, Record<string, string>>; // { [serviceId]: { [studentNre]: role } }
 
@@ -237,7 +228,8 @@ const ServiciosTab: React.FC<{
     practicaGroups: string[];
     planningAssignments: PlanningAssignments;
     students: Student[];
-}> = ({ services, setServices, practicaGroups, planningAssignments, students }) => {
+    onManageService: (service: Service) => void;
+}> = ({ services, setServices, practicaGroups, planningAssignments, students, onManageService }) => {
 
     const handleGroupAssignmentChange = (serviceId: string, type: 'comedor' | 'takeaway', group: string, checked: boolean) => {
         setServices(prevServices => prevServices.map(s => {
@@ -293,7 +285,7 @@ const ServiciosTab: React.FC<{
                                         {leaders.map(l => <li key={l.nre}><strong>{leaderAssignments[l.nre]}:</strong> {l.nombre} {l.apellido1}</li>)}
                                      </ul>
                                 ) : <p className="text-sm text-gray-500">Pendiente de asignación.</p>}
-                                 <button className="mt-4 text-sm bg-gray-200 px-3 py-1 rounded-md hover:bg-gray-300 w-full" onClick={() => alert("Función para gestionar ficha de servicio (menú, evaluaciones, etc.) no implementada.")}>
+                                 <button className="mt-4 text-sm bg-gray-200 px-3 py-1 rounded-md hover:bg-gray-300 w-full" onClick={() => onManageService(service)}>
                                     Gestionar Ficha de Servicio
                                 </button>
                             </div>
@@ -596,7 +588,7 @@ const PartidasYGruposTab: React.FC<{
 
 // --- MAIN VIEW COMPONENT ---
 
-type PracticaTab = 'Partidas y Grupos' | 'Configuración' | 'Servicios' | 'Planning';
+type PracticaTab = 'Partidas y Grupos' | 'Configuración' | 'Servicios' | 'Planning' | 'Gestión de Pedidos';
 
 interface GestionPracticaViewProps {
   students: Student[];
@@ -610,9 +602,12 @@ const GestionPracticaView: React.FC<GestionPracticaViewProps> = ({ students }) =
   const [studentGroupAssignments, setStudentGroupAssignments] = useState<StudentGroupAssignments>(() => safeJsonParse('studentGroupAssignments', {}));
   const [groupColors, setGroupColors] = useState<Record<string, string>>(() => safeJsonParse('groupColors', {}));
 
-  // State for services and planning
+  // State for services, planning and orders
   const [services, setServices] = useState<Service[]>(() => safeJsonParse('practicaServices', []));
   const [planningAssignments, setPlanningAssignments] = useState<PlanningAssignments>(() => safeJsonParse('planningAssignments', {}));
+  const [orders, setOrders] = useState<Order[]>(() => safeJsonParse('practicaOrders', []));
+  const [productCatalog, setProductCatalog] = useState<Product[]>(() => safeJsonParse('cocina-catalogo-productos', []));
+  const [serviceToManage, setServiceToManage] = useState<Service | null>(null);
 
   // Automatic saving effects
   useEffect(() => { localStorage.setItem('practicaServices', JSON.stringify(services)); }, [services]);
@@ -620,6 +615,8 @@ const GestionPracticaView: React.FC<GestionPracticaViewProps> = ({ students }) =
   useEffect(() => { localStorage.setItem('practicaGroups', JSON.stringify(practicaGroups)); }, [practicaGroups]);
   useEffect(() => { localStorage.setItem('studentGroupAssignments', JSON.stringify(studentGroupAssignments)); }, [studentGroupAssignments]);
   useEffect(() => { localStorage.setItem('groupColors', JSON.stringify(groupColors)); }, [groupColors]);
+  useEffect(() => { localStorage.setItem('practicaOrders', JSON.stringify(orders)); }, [orders]);
+
 
   // Effect to clean up assignments if students are deleted from the main list
   useEffect(() => {
@@ -732,9 +729,11 @@ const GestionPracticaView: React.FC<GestionPracticaViewProps> = ({ students }) =
       case 'Configuración':
         return <ConfiguracionTab services={services} setServices={setServices} handleDeleteService={handleDeleteService} />;
       case 'Servicios':
-        return <ServiciosTab services={services} setServices={setServices} practicaGroups={practicaGroups} planningAssignments={planningAssignments} students={students}/>;
+        return <ServiciosTab services={services} setServices={setServices} practicaGroups={practicaGroups} planningAssignments={planningAssignments} students={students} onManageService={setServiceToManage}/>;
       case 'Planning':
         return <PlanningTab services={services} students={students} studentGroupAssignments={studentGroupAssignments} planningAssignments={planningAssignments} setPlanningAssignments={setPlanningAssignments} />;
+      case 'Gestión de Pedidos':
+        return <GestionPedidosTab orders={orders} services={services} productCatalog={productCatalog} setOrders={setOrders} />;
       default:
         return null;
     }
@@ -745,6 +744,7 @@ const GestionPracticaView: React.FC<GestionPracticaViewProps> = ({ students }) =
     { name: 'Configuración', icon: <CogIcon className="h-5 w-5 mr-2" /> },
     { name: 'Servicios', icon: <ServiceIcon className="h-5 w-5 mr-2" /> },
     { name: 'Planning', icon: <CalendarIcon className="h-5 w-5 mr-2" /> },
+    { name: 'Gestión de Pedidos', icon: <ShoppingCartIcon className="h-5 w-5 mr-2" /> },
   ];
 
   return (
@@ -768,6 +768,20 @@ const GestionPracticaView: React.FC<GestionPracticaViewProps> = ({ students }) =
       <div>
         {renderContent()}
       </div>
+
+      {serviceToManage && (
+        <FichaServicioModal 
+            service={serviceToManage}
+            onClose={() => setServiceToManage(null)}
+            onSave={(updatedService) => {
+                setServices(prev => prev.map(s => s.id === updatedService.id ? updatedService : s));
+                setServiceToManage(null);
+            }}
+            onGenerateOrder={(newOrder) => {
+                setOrders(prev => [newOrder, ...prev]);
+            }}
+        />
+      )}
     </div>
   );
 };
