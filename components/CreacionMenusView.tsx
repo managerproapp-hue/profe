@@ -76,9 +76,9 @@ const MenuSection: React.FC<{
     }, [search, allRecipes, apartado]);
 
     return (
-        <div className="bg-gray-50 p-4 rounded-lg border h-full flex flex-col">
+        <div className="bg-gray-50 p-4 rounded-lg border flex flex-col">
             <h3 className="text-xl font-bold text-gray-800 mb-4">{title}</h3>
-            <div className="space-y-4 flex-1 overflow-y-auto pr-2">
+            <div className="space-y-4 pr-2">
                 {Object.entries(apartado).map(([sectionName, recipeIds]) => (
                     <div key={sectionName} className="bg-white p-3 rounded-md shadow-sm">
                          <div className="flex justify-between items-center mb-2">

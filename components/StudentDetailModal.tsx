@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Student, Grade, Annotation, Interview } from '../types';
-import { CloseIcon, PencilIcon, PlusIcon } from './icons';
+import { CloseIcon, PencilIcon, PlusIcon, DownloadIcon } from './icons';
+import { printContent } from './printUtils';
 
 // Re-using helper functions from the old view
 const getGradeColor = (score: number) => {
@@ -72,6 +73,93 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({ student, onClos
     </div>
   );
 
+  const handleDownload = () => {
+    const studentName = `${student.nombre} ${student.apellido1} ${student.apellido2}`;
+    const personalDataHtml = `
+      <div style="background-color: #f9fafb; padding: 1.5rem; border-radius: 0.5rem; margin-bottom: 1.5rem;">
+        <h3 style="font-size: 1.25rem; font-weight: bold; margin-bottom: 1rem; color: #1f2937;">Datos Personales</h3>
+        <table style="width: 100%; font-size: 0.875rem;">
+          <tr><td style="padding: 0.25rem 0; font-weight: 600; color: #4b5563;">NRE:</td><td style="padding: 0.25rem 0;">${student.nre}</td></tr>
+          <tr><td style="padding: 0.25rem 0; font-weight: 600; color: #4b5563;">Expediente:</td><td style="padding: 0.25rem 0;">${student.expediente}</td></tr>
+          <tr><td style="padding: 0.25rem 0; font-weight: 600; color: #4b5563;">Grupo:</td><td style="padding: 0.25rem 0;">${student.grupo} (${student.subgrupo})</td></tr>
+          <tr><td style="padding: 0.25rem 0; font-weight: 600; color: #4b5563;">Fecha Nacimiento:</td><td style="padding: 0.25rem 0;">${new Date(student.fechaNacimiento).toLocaleDateString()}</td></tr>
+          <tr><td style="padding: 0.25rem 0; font-weight: 600; color: #4b5563;">Teléfono:</td><td style="padding: 0.25rem 0;">${student.telefono}</td></tr>
+          <tr><td style="padding: 0.25rem 0; font-weight: 600; color: #4b5563;">Teléfono 2:</td><td style="padding: 0.25rem 0;">${student.telefono2 || '-'}</td></tr>
+          <tr><td style="padding: 0.25rem 0; font-weight: 600; color: #4b5563;">Email Oficial:</td><td style="padding: 0.25rem 0;">${student.emailOficial}</td></tr>
+          <tr><td style="padding: 0.25rem 0; font-weight: 600; color: #4b5563;">Email Personal:</td><td style="padding: 0.25rem 0;">${student.emailPersonal}</td></tr>
+        </table>
+      </div>
+    `;
+
+    const gradesHtml = `
+      <div style="margin-bottom: 1.5rem; break-inside: avoid;">
+        <h3 style="font-size: 1.25rem; font-weight: bold; margin-bottom: 1rem; color: #1f2937;">Calificaciones</h3>
+        ${student.calificaciones?.length ? `
+          <ul style="list-style: none; padding: 0;">
+            ${student.calificaciones.map(g => `<li style="display: flex; justify-content: space-between; padding: 0.5rem; border-bottom: 1px solid #e5e7eb;"><span>${g.subject}</span><span style="font-weight: bold;">${g.score.toFixed(1)}</span></li>`).join('')}
+          </ul>
+          <p style="text-align: right; font-weight: bold; margin-top: 0.5rem;">Nota Media: ${averageGrade}</p>
+        ` : '<p style="color: #6b7280; font-style: italic;">No hay calificaciones registradas.</p>'}
+      </div>
+    `;
+
+    const interviewsHtml = `
+      <div style="margin-bottom: 1.5rem; break-inside: avoid;">
+        <h3 style="font-size: 1.25rem; font-weight: bold; margin-bottom: 1rem; color: #1f2937;">Entrevistas y Tutorías</h3>
+        ${student.entrevistas?.length ? `
+          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            ${[...student.entrevistas].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(i => `
+              <div style="background-color: #f9fafb; padding: 1rem; border-radius: 0.5rem; border-left: 4px solid #10b981;">
+                <p style="font-weight: 600;">${new Date(i.date).toLocaleDateString()} - <span style="font-weight: normal; color: #4b5563;">${i.attendees}</span></p>
+                <p style="margin-top: 0.5rem; white-space: pre-wrap; font-size: 0.875rem;">${i.notes}</p>
+              </div>
+            `).join('')}
+          </div>
+        ` : '<p style="color: #6b7280; font-style: italic;">No hay entrevistas registradas.</p>'}
+      </div>
+    `;
+
+    const annotationsHtml = `
+      <div style="break-inside: avoid;">
+        <h3 style="font-size: 1.25rem; font-weight: bold; margin-bottom: 1rem; color: #1f2937;">Anotaciones</h3>
+        ${student.anotaciones?.length ? `
+          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            ${student.anotaciones.map(a => {
+                const color = a.type === 'positive' ? '#10b981' : a.type === 'negative' ? '#ef4444' : '#6b7280';
+                return `
+                  <div style="padding: 1rem; border-left: 4px solid ${color}; background-color: #f9fafb; border-radius: 0.5rem;">
+                    <p style="font-size: 0.875rem;">${a.note}</p>
+                    <p style="font-size: 0.75rem; color: #6b7280; margin-top: 0.25rem;">${new Date(a.date).toLocaleDateString()}</p>
+                  </div>
+                `;
+            }).join('')}
+          </div>
+        ` : '<p style="color: #6b7280; font-style: italic;">No hay anotaciones registradas.</p>'}
+      </div>
+    `;
+
+    const contentHtml = `
+        <div style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2rem;">
+            ${student.photoUrl ? `<img src="${student.photoUrl}" alt="Foto" style="width: 7rem; height: 7rem; border-radius: 9999px; object-fit: cover; border: 4px solid #e5e7eb;">` : ''}
+            <div>
+                <h1 style="font-size: 2.25rem; font-weight: bold; color: #111827; line-height: 1.1;">${studentName}</h1>
+                <p style="font-size: 1rem; color: #4b5563;">${student.emailOficial}</p>
+            </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+            <div>
+                ${personalDataHtml}
+                ${gradesHtml}
+            </div>
+            <div>
+                ${interviewsHtml}
+                ${annotationsHtml}
+            </div>
+        </div>
+    `;
+
+    printContent(`Ficha Completa - ${studentName}`, contentHtml);
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4">
@@ -79,8 +167,15 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({ student, onClos
         {/* Header */}
         <div className="p-5 border-b border-gray-200 flex justify-between items-center bg-white rounded-t-xl flex-shrink-0">
           <h2 className="text-2xl font-bold text-gray-800">Ficha del Alumno</h2>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
              <button
+              onClick={handleDownload}
+              className="flex items-center bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+            >
+              <DownloadIcon className="h-5 w-5 mr-2" />
+              Descargar Ficha
+            </button>
+            <button
               onClick={() => onEdit(student)}
               className="flex items-center bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
             >

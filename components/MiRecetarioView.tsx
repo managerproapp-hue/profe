@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Recipe, Product, RecipeIngredient, RecipeStep, Elaboration } from '../types';
 import { ALLERGENS, PRODUCT_UNITS, PRODUCT_CATEGORIES, RECIPE_CATEGORIES } from '../constants';
-import { PencilIcon, PlusIcon, TrashIcon, BackIcon, UploadIcon, EyeIcon, DownloadIcon } from './icons';
+import { PencilIcon, PlusIcon, TrashIcon, BackIcon, UploadIcon, EyeIcon, DownloadIcon, XIcon, CheckIcon, ClipboardIcon, CodeBracketIcon } from './icons';
+import { printContent } from './printUtils';
 
 // --- HELPER FUNCTIONS ---
 const uuidv4 = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -131,6 +132,7 @@ const AddProductModal: React.FC<{
                              <div>
                                 <label className="block text-sm font-medium text-gray-700">Unidad</label>
                                 <select name="unit" value={formData.unit} onChange={handleInputChange} required className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm bg-white">
+                                    {/* FIX: Changed `u` to `unit` to correctly reference the map variable. */}
                                     {PRODUCT_UNITS.map(unit => <option key={unit} value={unit}>{unit}</option>)}
                                 </select>
                             </div>
@@ -315,6 +317,59 @@ const RecipeFormView: React.FC<{
         return { totalCost: cost, totalAllergens: Array.from(allergens) };
     }, [formData.elaborations, products]);
     
+    const handlePrintRecipe = () => {
+        let html = `
+            ${formData.imageUrl ? `<img src="${formData.imageUrl}" alt="${formData.name}" style="width: 100%; max-height: 300px; object-fit: cover; margin-bottom: 1.5rem; border-radius: 0.5rem;" />` : ''}
+            <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #eee; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                <div>
+                    <p style="font-size: 0.875rem; color: #4f46e5; font-weight: 600;">${formData.category}</p>
+                    <h2 style="font-size: 2.25rem; font-weight: bold; margin: 0;">${formData.name}</h2>
+                </div>
+                <p style="font-size: 1.125rem; font-weight: 600;">Para ${formData.servings} raciones</p>
+            </div>
+            
+            ${formData.description ? `<div style="margin-bottom: 1.5rem;">
+                <h3 style="font-size: 1.25rem; font-weight: bold; border-bottom: 1px solid #ddd; padding-bottom: 0.5rem; margin-bottom: 0.75rem;">Descripción</h3>
+                <p style="color: #4b5563;">${formData.description}</p>
+            </div>` : ''}
+        `;
+
+        html += formData.elaborations.map(elab => `
+            <div style="break-inside: avoid; margin-bottom: 2rem;">
+                <h3 style="font-size: 1.5rem; font-weight: bold; color: #166534; background-color: #f0fdf4; padding: 0.5rem 1rem; border-left: 4px solid #22c55e; border-radius: 0.25rem;">${elab.name}</h3>
+                <div style="display: grid; grid-template-columns: 40% 60%; gap: 1.5rem; margin-top: 1rem;">
+                    <div>
+                        <h4 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.75rem;">Ingredientes</h4>
+                        <ul style="list-style: none; padding: 0; font-size: 0.875rem;">
+                            ${elab.ingredients.map(ing => {
+                                const p = products.find(prod => prod.id === ing.productId);
+                                return `<li style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #f3f4f6;">
+                                    <span>${p?.name || 'N/A'}</span>
+                                    <span style="font-weight: 500;">${ing.quantity.toFixed(2)} ${ing.unit}</span>
+                                </li>`;
+                            }).join('')}
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.75rem;">Pasos</h4>
+                        <ol style="padding-left: 1.25rem;">
+                            ${elab.steps.map(step => `<li style="margin-bottom: 0.75rem; color: #374151;">${step.description}</li>`).join('')}
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+         if (formData.serviceNotes) {
+            html += `<div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #eee;">
+                <h3 style="font-size: 1.25rem; font-weight: bold; margin-bottom: 0.75rem;">Notas de Servicio</h3>
+                <p style="color: #4b5563;">${formData.serviceNotes}</p>
+            </div>`;
+         }
+
+        printContent(`Ficha Técnica: ${formData.name}`, html);
+    };
+
     return (
         <>
             {isAddingProduct && (
@@ -455,6 +510,9 @@ const RecipeFormView: React.FC<{
                                     <span className="font-semibold text-gray-900">{(totalCost / formData.servings).toFixed(2)} €</span>
                                 </div>
                             </div>
+                             <button type="button" onClick={handlePrintRecipe} className="w-full mt-4 text-sm text-center py-2 bg-blue-100 text-blue-800 font-semibold rounded-md hover:bg-blue-200">
+                                Imprimir Ficha
+                            </button>
                         </div>
                         <div className="bg-white p-4 rounded-lg shadow-md">
                             <h3 className="font-bold text-lg text-gray-800 border-b pb-2 mb-3">Alérgenos Presentes</h3>
@@ -496,6 +554,92 @@ const RecipeCard: React.FC<{ recipe: Recipe; onSelect: () => void; }> = ({ recip
     </div>
 );
 
+const TemplatePromptModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+    const [isCopied, setIsCopied] = useState(false);
+
+    const PROMPT_TEXT = `Actúa como un asistente de cocina experto en digitalización de recetas. Tu tarea es convertir la siguiente receta de cocina, que te proporcionaré en texto plano, a un formato JSON específico. Es crucial que sigas la estructura y las reglas al pie de la letra, prestando especial atención a cómo se anidan los ingredientes.
+
+Estructura JSON Requerida:
+Debes generar un único objeto JSON con la siguiente estructura. Observa que la lista de ingredientes va DENTRO de cada elaboración.
+\`\`\`json
+{
+  "name": "string",
+  "category": "string",
+  "servings": "number",
+  "description": "string",
+  "serviceNotes": "string",
+  "elaborations": [
+    {
+      "name": "string",
+      "ingredients": [
+        {
+          "name": "string",
+          "quantity": "number",
+          "unit": "string"
+        }
+      ],
+      "steps": [
+        "string"
+      ]
+    }
+  ]
+}
+\`\`\`
+Reglas y Guía de Campos:
+- name: El nombre completo y descriptivo del plato.
+- category: La categoría del plato. Usa una de las siguientes: Entrantes, Sopas y Cremas, Ensaladas, Arroces y Pastas, Carnes, Pescados, Guarniciones, Postres, Salsas, Bebidas.
+- servings: El número total de raciones que produce la receta. Debe ser un número.
+- description: Texto breve que describa el plato.
+- serviceNotes: Anotaciones para el emplatado o servicio.
+- elaborations: Un array de elaboraciones. Toda receta debe tener al menos una. Si la receta no está dividida en partes, crea una única elaboración llamada "Elaboración Principal".
+- elaborations.name: Nombre de la parte de la receta (ej. "Masa de la tarta", "Relleno", "Salsa").
+- elaborations.ingredients: (IMPORTANTE) Un array de objetos, uno por cada ingrediente utilizado únicamente en esta elaboración.
+- ingredients.name: Nombre exacto del producto (ej. "Harina de trigo", "Huevo").
+- ingredients.quantity: La cantidad. Debe ser un número, no texto (usa 0.5 en vez de "1/2").
+- ingredients.unit: La unidad de medida estandarizada: kg, litro, unidad, gramo, mililitro, manojo.
+- elaborations.steps: Un array de strings, donde cada string es un paso de la preparación de esta elaboración.
+
+Instrucción Final Importante:
+Tu respuesta debe ser únicamente el código JSON, sin explicaciones adicionales, comentarios, ni el formato de bloque de código \`\`\`json ... \`\`\`. Solo el JSON puro.`;
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(PROMPT_TEXT).then(() => {
+            setIsCopied(true);
+            setTimeout(() => setIsCopied(false), 2500);
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+            alert('Error al copiar el texto al portapapeles.');
+        });
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl transform transition-all flex flex-col max-h-[90vh]">
+                <div className="p-5 border-b border-gray-200 flex justify-between items-center">
+                    <h2 className="text-xl font-bold text-gray-800">Prompt para Generación de Ficha JSON</h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-2 rounded-full">
+                        <XIcon className="h-6 w-6" />
+                    </button>
+                </div>
+                <div className="p-6 flex-1 overflow-y-auto">
+                    <p className="mb-4 text-gray-700">Copia el siguiente texto, pégalo en tu IA generativa de preferencia (como Gemini) y a continuación, pega el texto de tu receta para que la convierta al formato JSON correcto.</p>
+                    <div className="bg-gray-800 text-white p-4 rounded-md relative font-mono text-sm">
+                        <pre className="whitespace-pre-wrap">{PROMPT_TEXT}</pre>
+                        <button onClick={handleCopy} className="absolute top-3 right-3 bg-gray-600 hover:bg-gray-500 text-white font-semibold py-1 px-3 rounded-md text-sm flex items-center gap-2 transition-colors">
+                           {isCopied ? <CheckIcon className="h-5 w-5 text-green-400"/> : <ClipboardIcon className="h-5 w-5"/>}
+                           {isCopied ? '¡Copiado!' : 'Copiar'}
+                        </button>
+                    </div>
+                </div>
+                 <div className="bg-gray-50 p-4 flex justify-end">
+                    <button onClick={onClose} className="px-6 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
 // --- MAIN VIEW COMPONENT ---
 const MiRecetarioView: React.FC = () => {
     const [recipes, setRecipes] = useState<Recipe[]>(() => {
@@ -521,6 +665,7 @@ const MiRecetarioView: React.FC = () => {
     const [view, setView] = useState<'list' | 'form' | 'detail'>('list');
     const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
     const importInputRef = useRef<HTMLInputElement>(null);
 
     const allRecipeCategories = useMemo(() => {
@@ -577,14 +722,8 @@ const MiRecetarioView: React.FC = () => {
         localStorage.setItem('cocina-catalogo-productos', JSON.stringify(updatedProducts));
     };
 
-    const handleDownloadTemplate = () => {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(RECIPE_TEMPLATE_JSON);
-        const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", "plantilla_ficha_tecnica.json");
-        document.body.appendChild(downloadAnchorNode);
-        downloadAnchorNode.click();
-        downloadAnchorNode.remove();
+    const handleShowPrompt = () => {
+        setIsPromptModalOpen(true);
     };
 
     const handleImportJson = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -599,7 +738,7 @@ const MiRecetarioView: React.FC = () => {
                 const missingIngredients: string[] = [];
                 const mappedElaborations: Elaboration[] = (imported.elaborations || []).map((elab: any) => {
                     const mappedIngredients: RecipeIngredient[] = (elab.ingredients || []).map((ing: any) => {
-                        const product = products.find(p => p.name.toLowerCase() === ing.name?.toLowerCase());
+                        const product = products.find(p => ing.name?.toLowerCase().includes(p.name.toLowerCase()));
                         if (product) {
                             return { productId: product.id, quantity: ing.quantity || 0, unit: ing.unit || product.unit };
                         } else {
@@ -669,69 +808,74 @@ const MiRecetarioView: React.FC = () => {
     }
     
     return (
-        <div className="space-y-8">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h2 className="text-2xl font-bold text-gray-800">Mi Recetario</h2>
-                    <p className="text-gray-500 mt-1">{recipes.length} recetas en total</p>
-                </div>
-                <div className="flex items-center gap-2 self-end md:self-center">
-                    <button onClick={handleDownloadTemplate} title="Descargar plantilla para IA" className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-3 rounded-lg transition-colors flex items-center">
-                        <DownloadIcon className="h-5 w-5"/>
-                    </button>
-                     <button onClick={() => importInputRef.current?.click()} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center">
-                        <UploadIcon className="h-5 w-5 mr-2" />
-                        Importar Ficha
-                    </button>
-                    <input type="file" ref={importInputRef} onChange={handleImportJson} accept=".json" className="hidden" />
-                    <button onClick={handleAddNewRecipe} className="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center">
-                        <PlusIcon className="h-5 w-5 mr-2" />
-                        Nueva Ficha
-                    </button>
-                </div>
-            </div>
-          
-            {latestRecipes.length > 0 && (
-                <div>
-                    <h3 className="text-xl font-semibold text-gray-700 mb-4">Últimas Recetas Añadidas</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-                        {latestRecipes.map(recipe => (
-                            <RecipeCard key={recipe.id} recipe={recipe} onSelect={() => handleEditRecipe(recipe)} />
-                        ))}
+        <>
+            {isPromptModalOpen && <TemplatePromptModal onClose={() => setIsPromptModalOpen(false)} />}
+            <div className="space-y-8">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h2 className="text-2xl font-bold text-gray-800">Mi Recetario</h2>
+                        <p className="text-gray-500 mt-1">
+                            <span className="font-semibold text-gray-700">{recipes.length}</span> fichas técnicas en total
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-2 self-end md:self-center">
+                        <button onClick={handleShowPrompt} title="Generar Prompt para IA" className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-3 rounded-lg transition-colors flex items-center">
+                            <CodeBracketIcon className="h-5 w-5"/>
+                        </button>
+                        <button onClick={() => importInputRef.current?.click()} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center">
+                            <UploadIcon className="h-5 w-5 mr-2" />
+                            Importar Ficha JSON
+                        </button>
+                        <input type="file" ref={importInputRef} onChange={handleImportJson} accept=".json" className="hidden" />
+                        <button onClick={handleAddNewRecipe} className="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center">
+                            <PlusIcon className="h-5 w-5 mr-2" />
+                            Nueva Ficha
+                        </button>
                     </div>
                 </div>
-            )}
             
-            <div>
-                 <h3 className="text-xl font-semibold text-gray-700 mb-4">Todas las Recetas</h3>
-                 <div className="bg-white p-4 rounded-lg shadow-md mb-6">
-                    <input
-                        type="text"
-                        placeholder="Buscar por nombre o categoría..."
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
-                </div>
-
-                {filteredRecipes.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                        {filteredRecipes.map(recipe => (
-                        <RecipeCard key={recipe.id} recipe={recipe} onSelect={() => handleEditRecipe(recipe)} />
-                        ))}
-                    </div>
-                ) : (
-                    <div className="text-center py-16 bg-white rounded-lg shadow-md">
-                        <p className="text-gray-500">No se encontraron recetas con tu búsqueda.</p>
-                        {recipes.length === 0 && (
-                             <button onClick={handleAddNewRecipe} className="mt-4 bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">
-                                Crea tu primera receta
-                            </button>
-                        )}
+                {latestRecipes.length > 0 && (
+                    <div>
+                        <h3 className="text-xl font-semibold text-gray-700 mb-4">Últimas Recetas Añadidas</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                            {latestRecipes.map(recipe => (
+                                <RecipeCard key={recipe.id} recipe={recipe} onSelect={() => handleEditRecipe(recipe)} />
+                            ))}
+                        </div>
                     </div>
                 )}
+                
+                <div>
+                    <h3 className="text-xl font-semibold text-gray-700 mb-4">Todas las Recetas</h3>
+                    <div className="bg-white p-4 rounded-lg shadow-md mb-6">
+                        <input
+                            type="text"
+                            placeholder="Buscar por nombre o categoría..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                        />
+                    </div>
+
+                    {filteredRecipes.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                            {filteredRecipes.map(recipe => (
+                            <RecipeCard key={recipe.id} recipe={recipe} onSelect={() => handleEditRecipe(recipe)} />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-16 bg-white rounded-lg shadow-md">
+                            <p className="text-gray-500">No se encontraron recetas con tu búsqueda.</p>
+                            {recipes.length === 0 && (
+                                <button onClick={handleAddNewRecipe} className="mt-4 bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                                    Crea tu primera receta
+                                </button>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
-        </div>
+        </>
     );
 };
 

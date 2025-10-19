@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Product } from '../types';
 import { PRODUCT_CATEGORIES, PRODUCT_UNITS, ALLERGENS, ALLERGEN_MAP, normalizeCategory } from '../constants';
 import { PlusIcon, PencilIcon, TrashIcon, UploadIcon, DownloadIcon, CheckIcon, XIcon } from './icons';
+import { printContent, exportToExcel } from './printUtils';
+
 
 // Simple UUID generator
 const uuidv4 = () => {
@@ -34,6 +36,7 @@ const CatalogoProductosView: React.FC = () => {
     const [formData, setFormData] = useState<Omit<Product, 'id'>>(EMPTY_PRODUCT);
     const [searchTerm, setSearchTerm] = useState('');
     const [stagedForImport, setStagedForImport] = useState<{ fileName: string; products: Product[] } | null>(null);
+    const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -174,6 +177,7 @@ const CatalogoProductosView: React.FC = () => {
         linkElement.setAttribute('href', dataUri);
         linkElement.setAttribute('download', exportFileDefaultName);
         linkElement.click();
+        setIsExportMenuOpen(false);
     };
 
     const filteredProducts = useMemo(() => {
@@ -184,6 +188,48 @@ const CatalogoProductosView: React.FC = () => {
             )
             .sort((a, b) => a.name.localeCompare(b.name));
     }, [products, searchTerm]);
+    
+    const handlePrintCatalog = () => {
+        const tableHtml = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Categoría</th>
+                        <th>Precio</th>
+                        <th>Unidad</th>
+                        <th>Alérgenos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${filteredProducts.map(p => `
+                        <tr>
+                            <td>${p.name}</td>
+                            <td>${p.category}</td>
+                            <td>${p.price.toFixed(2)} €</td>
+                            <td>${p.unit}</td>
+                            <td>${p.allergens.join(', ')}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+        printContent('Catálogo de Productos', tableHtml);
+        setIsExportMenuOpen(false);
+    };
+
+    const handleExportExcel = () => {
+        const dataToExport = filteredProducts.map(p => ({
+            'Producto': p.name,
+            'Categoría': p.category,
+            'Precio': p.price,
+            'Unidad': p.unit,
+            'Alérgenos': p.allergens.join(', '),
+        }));
+        exportToExcel(dataToExport, 'catalogo_productos', 'Productos');
+        setIsExportMenuOpen(false);
+    };
+
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
@@ -257,9 +303,18 @@ const CatalogoProductosView: React.FC = () => {
                         </button>
                         <input type="file" ref={fileInputRef} onChange={handleImportJson} accept=".json" className="hidden"/>
 
-                        <button onClick={handleExportJson} className="flex-1 flex items-center justify-center gap-2 p-2 bg-green-500 text-white rounded-md hover:bg-green-600 font-semibold text-sm">
-                            <DownloadIcon className="h-5 w-5"/> Exportar
-                        </button>
+                        <div className="relative flex-1">
+                            <button onClick={() => setIsExportMenuOpen(prev => !prev)} className="w-full flex items-center justify-center gap-2 p-2 bg-green-500 text-white rounded-md hover:bg-green-600 font-semibold text-sm">
+                                <DownloadIcon className="h-5 w-5"/> Exportar
+                            </button>
+                            {isExportMenuOpen && (
+                                <div className="absolute right-0 mt-2 w-full bg-white rounded-md shadow-lg z-10 border">
+                                    <button onClick={handlePrintCatalog} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Imprimir Catálogo</button>
+                                    <button onClick={handleExportExcel} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Exportar a Excel</button>
+                                    <button onClick={handleExportJson} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Exportar a JSON</button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
                 
@@ -275,10 +330,7 @@ const CatalogoProductosView: React.FC = () => {
                 )}
 
                 <div className="bg-white p-4 rounded-lg shadow-md">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-bold text-gray-700">Catálogo de Productos</h3>
-                        <span className="text-sm font-semibold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{products.length} en total</span>
-                    </div>
+                    <h2 className="text-lg font-bold text-gray-800 mb-2">Catálogo de Productos ({products.length})</h2>
                     <input
                         type="text"
                         placeholder="Buscar producto o categoría..."

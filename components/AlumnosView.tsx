@@ -4,7 +4,8 @@ import StudentTable from './StudentTable';
 import StudentDetailModal from './StudentDetailModal';
 import ImportModal from './ImportModal';
 import AddEditStudentModal from './EditStudentModal';
-import { EyeIcon, PencilIcon, TrashIcon, ViewGridIcon, ViewListIcon, PlusIcon } from './icons';
+import { EyeIcon, PencilIcon, TrashIcon, ViewGridIcon, ViewListIcon, PlusIcon, DownloadIcon } from './icons';
+import { printContent, exportToExcel } from './printUtils';
 
 interface AlumnosViewProps {
   students: Student[];
@@ -41,6 +42,7 @@ const AlumnosView: React.FC<AlumnosViewProps> = ({ students, setStudents }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [filter, setFilter] = useState('');
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
 
   const handleSaveStudent = (studentToSave: Student) => {
     const isNew = !students.some(s => s.nre === studentToSave.nre);
@@ -98,6 +100,55 @@ const AlumnosView: React.FC<AlumnosViewProps> = ({ students, setStudents }) => {
         .includes(filter.toLowerCase())
     );
   }, [students, filter]);
+  
+  const handlePrintList = () => {
+    const tableHtml = `
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre Completo</th>
+            <th>NRE</th>
+            <th>Grupo</th>
+            <th>Email Oficial</th>
+            <th>Teléfono</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filteredStudents.map(s => `
+            <tr>
+              <td>${s.nombre} ${s.apellido1} ${s.apellido2}</td>
+              <td>${s.nre}</td>
+              <td>${s.grupo}</td>
+              <td>${s.emailOficial}</td>
+              <td>${s.telefono}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+    printContent('Listado de Alumnos', tableHtml);
+    setIsExportMenuOpen(false);
+  };
+
+  const handleExportExcel = () => {
+    const dataToExport = filteredStudents.map(s => ({
+        'Nombre': s.nombre,
+        'Apellido 1': s.apellido1,
+        'Apellido 2': s.apellido2,
+        'NRE': s.nre,
+        'Expediente': s.expediente,
+        'Grupo': s.grupo,
+        'Subgrupo': s.subgrupo,
+        'Fecha Nacimiento': s.fechaNacimiento,
+        'Email Oficial': s.emailOficial,
+        'Email Personal': s.emailPersonal,
+        'Teléfono': s.telefono,
+        'Teléfono 2': s.telefono2,
+    }));
+    exportToExcel(dataToExport, 'listado_alumnos', 'Alumnos');
+    setIsExportMenuOpen(false);
+  };
+
 
   return (
     <div className="p-8">
@@ -120,6 +171,21 @@ const AlumnosView: React.FC<AlumnosViewProps> = ({ students, setStudents }) => {
           >
             Importar
           </button>
+           <div className="relative">
+                <button 
+                    onClick={() => setIsExportMenuOpen(prev => !prev)}
+                    className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center"
+                >
+                    <DownloadIcon className="h-5 w-5 mr-1"/>
+                    Exportar
+                </button>
+                {isExportMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border">
+                        <button onClick={handlePrintList} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Imprimir Lista</button>
+                        <button onClick={handleExportExcel} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Exportar a Excel</button>
+                    </div>
+                )}
+            </div>
         </div>
       </header>
 

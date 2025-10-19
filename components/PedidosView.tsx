@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Service, Recipe, Product, MenusState, Menu, MenuApartado } from '../types';
+import { printContent, exportToExcel } from './printUtils';
 
 // Helper function to safely parse JSON from localStorage
 const safeJsonParse = <T,>(key: string, defaultValue: T): T => {
@@ -23,11 +24,11 @@ type PedidoItem = {
 
 // Detailed view for a single service's order
 const PedidoDetalle: React.FC<{
+    service: Service;
     menu: Menu;
     recipes: Recipe[];
     products: Product[];
-    serviceId: string;
-}> = ({ menu, recipes, products, serviceId }) => {
+}> = ({ service, menu, recipes, products }) => {
 
     const [pedido, setPedido] = useState<PedidoItem[]>([]);
 
@@ -95,56 +96,64 @@ const PedidoDetalle: React.FC<{
     }, [pedido]);
     
     const handlePrint = () => {
-        const printableElement = document.getElementById(`printable-pedido-${serviceId}`);
+        const printableElement = document.getElementById(`printable-pedido-${service.id}`);
         if(printableElement) {
-             const printWindow = window.open('', '', 'height=800,width=1000');
-             printWindow?.document.write('<html><head><title>Imprimir Pedido</title>');
-             printWindow?.document.write('<script src="https://cdn.tailwindcss.com"></script>');
-             printWindow?.document.write('</head><body>');
-             printWindow?.document.write(printableElement.innerHTML);
-             printWindow?.document.write('</body></html>');
-             printWindow?.document.close();
-             printWindow?.print();
+             printContent(`Pedido para: ${service.name} (${new Date(service.date).toLocaleDateString()})`, printableElement.innerHTML);
         }
+    };
+
+    const handleExport = () => {
+        const dataToExport = pedido.sort((a,b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name)).map(item => ({
+            'Categoría': item.category,
+            'Producto': item.name,
+            'Cantidad': parseFloat(item.quantity.toFixed(3)),
+            'Unidad': item.unit,
+        }));
+        exportToExcel(dataToExport, `pedido_${service.name.replace(/\s+/g, '_')}`, 'Pedido');
     };
 
     return (
         <div className="bg-gray-50 rounded-b-lg p-4">
              <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-bold text-gray-800">Pedido para {menu.pax} PAX</h3>
-                <button onClick={handlePrint} className="px-4 py-1.5 bg-blue-500 text-white font-bold text-sm rounded-md hover:bg-blue-600">Imprimir</button>
+                <div className="flex gap-2">
+                    <button onClick={handleExport} className="px-4 py-1.5 bg-green-500 text-white font-bold text-sm rounded-md hover:bg-green-600">Exportar Excel</button>
+                    <button onClick={handlePrint} className="px-4 py-1.5 bg-blue-500 text-white font-bold text-sm rounded-md hover:bg-blue-600">Imprimir</button>
+                </div>
              </div>
-             <div id={`printable-pedido-${serviceId}`} className="space-y-6">
-                {pedidoByCategory.length > 0 ? pedidoByCategory.map(([category, items]) => (
-                    <div key={category} className="mb-6 last:mb-0 break-inside-avoid">
-                        <h4 className="text-lg font-bold text-teal-700 bg-teal-50 px-3 py-2 rounded-md border-b-2 border-teal-200">{category}</h4>
-                        <table className="min-w-full mt-2 text-sm">
-                            <thead>
-                                <tr className="border-b">
-                                    <th className="py-2 px-3 text-left font-medium text-gray-600 w-3/5">Producto</th>
-                                    <th className="py-2 px-3 text-left font-medium text-gray-600 w-1/5">Cantidad</th>
-                                    <th className="py-2 px-3 text-left font-medium text-gray-600 w-1/5">Unidad</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            {items.sort((a,b) => a.name.localeCompare(b.name)).map(item => (
-                                <tr key={item.productId} className="border-b last:border-0 hover:bg-gray-50">
-                                    <td className="py-2 px-3">{item.name}</td>
-                                    <td className="py-2 px-3">
-                                        <input 
-                                            type="number" 
-                                            value={parseFloat(item.quantity.toFixed(3))} 
-                                            onChange={e => handleQuantityChange(item.productId, parseFloat(e.target.value) || 0)}
-                                            className="w-24 p-1 border rounded-md"
-                                        />
-                                    </td>
-                                    <td className="py-2 px-3 text-gray-600">{item.unit}</td>
-                                </tr>
-                            ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )) : <p className="text-center text-gray-500 italic py-8">No hay ingredientes en este menú para generar un pedido.</p>}
+             <div id={`printable-pedido-${service.id}`}>
+                 <div className="space-y-6 print-content">
+                    {pedidoByCategory.length > 0 ? pedidoByCategory.map(([category, items]) => (
+                        <div key={category} className="mb-6 last:mb-0 break-inside-avoid">
+                            <h4 className="text-lg font-bold text-teal-700 bg-teal-50 px-3 py-2 rounded-md border-b-2 border-teal-200">{category}</h4>
+                            <table className="min-w-full mt-2 text-sm">
+                                <thead>
+                                    <tr className="border-b">
+                                        <th className="py-2 px-3 text-left font-medium text-gray-600 w-3/5">Producto</th>
+                                        <th className="py-2 px-3 text-left font-medium text-gray-600 w-1/5">Cantidad</th>
+                                        <th className="py-2 px-3 text-left font-medium text-gray-600 w-1/5">Unidad</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                {items.sort((a,b) => a.name.localeCompare(b.name)).map(item => (
+                                    <tr key={item.productId} className="border-b last:border-0 hover:bg-gray-50">
+                                        <td className="py-2 px-3">{item.name}</td>
+                                        <td className="py-2 px-3">
+                                            <input 
+                                                type="number" 
+                                                value={parseFloat(item.quantity.toFixed(3))} 
+                                                onChange={e => handleQuantityChange(item.productId, parseFloat(e.target.value) || 0)}
+                                                className="w-24 p-1 border rounded-md"
+                                            />
+                                        </td>
+                                        <td className="py-2 px-3 text-gray-600">{item.unit}</td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )) : <p className="text-center text-gray-500 italic py-8">No hay ingredientes en este menú para generar un pedido.</p>}
+                </div>
              </div>
         </div>
     );
@@ -226,10 +235,10 @@ const PedidosView: React.FC = () => {
                             </div>
                             {isOpen && (
                                 <PedidoDetalle 
+                                    service={service}
                                     menu={menu}
                                     recipes={recipes}
                                     products={products}
-                                    serviceId={service.id}
                                 />
                             )}
                         </div>

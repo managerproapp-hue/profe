@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Student } from '../types';
-import { UsersIcon, GroupIcon, ServiceIcon, CalendarIcon, TrashIcon, CloseIcon, CogIcon, PlusIcon, PencilIcon, CheckIcon, XIcon } from './icons';
+import { UsersIcon, GroupIcon, ServiceIcon, CalendarIcon, TrashIcon, CloseIcon, CogIcon, PlusIcon, PencilIcon, CheckIcon, XIcon, DownloadIcon } from './icons';
+import { printContent, exportToExcel } from './printUtils';
+
 
 // --- HELPER FUNCTION ---
 const safeJsonParse = <T,>(key: string, defaultValue: T): T => {
@@ -313,6 +315,7 @@ const PlanningTab: React.FC<{
     setPlanningAssignments: React.Dispatch<React.SetStateAction<PlanningAssignments>>;
 }> = ({ services, students, studentGroupAssignments, planningAssignments, setPlanningAssignments }) => {
     const [isLoading, setIsLoading] = useState<string | null>(null); // serviceId of loading service
+    const [openExportMenu, setOpenExportMenu] = useState<string | null>(null);
 
     const handlePlanningChange = (serviceId: string, studentNre: string, newRole: string, groupName: string | null) => {
         setPlanningAssignments(prev => {
@@ -394,6 +397,79 @@ const PlanningTab: React.FC<{
         }
     };
 
+    const handlePrintPlanning = (service: Service) => {
+        const serviceAssignments = planningAssignments[service.id] || {};
+        let html = '';
+
+        const leaders = LEADER_ROLES.map(role => {
+            const studentNre = Object.keys(serviceAssignments).find(nre => serviceAssignments[nre] === role);
+            const student = students.find(s => s.nre === studentNre);
+            return { role, studentName: student ? `${student.nombre} ${student.apellido1}` : 'Sin asignar' };
+        });
+
+        html += `
+            <div style="margin-bottom: 2rem; break-inside: avoid;">
+                <h3 style="font-size: 1.25rem; font-weight: bold;">Roles de Liderazgo</h3>
+                <table style="margin-top: 0.5rem;">
+                    <thead><tr><th>Rol</th><th>Alumno</th></tr></thead>
+                    <tbody>${leaders.map(l => `<tr><td>${l.role}</td><td>${l.studentName}</td></tr>`).join('')}</tbody>
+                </table>
+            </div>
+        `;
+
+        const serviceGroups = [...new Set([...service.groupAssignments.comedor, ...service.groupAssignments.takeaway])];
+        serviceGroups.forEach(groupName => {
+            const studentsInGroup = students.filter(s => studentGroupAssignments[s.nre] === groupName);
+            html += `
+                <div style="margin-bottom: 2rem; break-inside: avoid;">
+                    <h3 style="font-size: 1.25rem; font-weight: bold;">Partida: ${groupName}</h3>
+                    <table style="margin-top: 0.5rem;">
+                        <thead><tr><th>Alumno</th><th>Rol Asignado</th></tr></thead>
+                        <tbody>
+                        ${studentsInGroup.map(student => {
+                            const role = serviceAssignments[student.nre] || 'Sin asignar';
+                            return `<tr><td>${student.nombre} ${student.apellido1}</td><td>${role}</td></tr>`;
+                        }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        });
+        
+        printContent(`Planning: ${service.name} (${new Date(service.date).toLocaleDateString()})`, html);
+        setOpenExportMenu(null);
+    };
+
+    const handleExportExcelPlanning = (service: Service) => {
+        const serviceAssignments = planningAssignments[service.id] || {};
+        const dataToExport: any[] = [];
+
+        LEADER_ROLES.forEach(role => {
+            const studentNre = Object.keys(serviceAssignments).find(nre => serviceAssignments[nre] === role);
+            const student = students.find(s => s.nre === studentNre);
+            dataToExport.push({
+                'Partida': 'Liderazgo',
+                'Rol': role,
+                'Alumno': student ? `${student.nombre} ${student.apellido1}` : 'Sin asignar'
+            });
+        });
+
+        const serviceGroups = [...new Set([...service.groupAssignments.comedor, ...service.groupAssignments.takeaway])];
+        serviceGroups.forEach(groupName => {
+            const studentsInGroup = students.filter(s => studentGroupAssignments[s.nre] === groupName);
+            studentsInGroup.forEach(student => {
+                 dataToExport.push({
+                    'Partida': groupName,
+                    'Rol': serviceAssignments[student.nre] || 'Sin asignar',
+                    'Alumno': `${student.nombre} ${student.apellido1}`
+                });
+            });
+        });
+
+        exportToExcel(dataToExport, `planning_${service.name.replace(/\s+/g, '_')}`, 'Planning');
+        setOpenExportMenu(null);
+    };
+
     const sortedServices = useMemo(() => services.slice().sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()), [services]);
 
     return (
@@ -409,12 +485,28 @@ const PlanningTab: React.FC<{
                                 <h3 className="text-xl font-bold text-gray-800">{service.name}</h3>
                                 <p className="text-sm text-gray-500">{new Date(service.date).toLocaleDateString()}</p>
                             </div>
-                            <button 
-                                onClick={() => handleDeployAI(service)}
-                                disabled={isLoading === service.id}
-                                className="bg-indigo-500 text-white font-semibold py-1.5 px-3 rounded-md hover:bg-indigo-600 disabled:bg-gray-400 text-sm">
-                                {isLoading === service.id ? "Procesando..." : "Guardar y Desplegar IA"}
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <div className="relative">
+                                    <button 
+                                        onClick={() => setOpenExportMenu(prev => prev === service.id ? null : service.id)}
+                                        className="bg-green-500 text-white font-semibold py-1.5 px-3 rounded-md hover:bg-green-600 text-sm flex items-center"
+                                    >
+                                        <DownloadIcon className="h-4 w-4 mr-1"/> Exportar
+                                    </button>
+                                    {openExportMenu === service.id && (
+                                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border">
+                                            <button onClick={() => handlePrintPlanning(service)} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Imprimir Planning</button>
+                                            <button onClick={() => handleExportExcelPlanning(service)} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Exportar a Excel</button>
+                                        </div>
+                                    )}
+                                </div>
+                                <button 
+                                    onClick={() => handleDeployAI(service)}
+                                    disabled={isLoading === service.id}
+                                    className="bg-indigo-500 text-white font-semibold py-1.5 px-3 rounded-md hover:bg-indigo-600 disabled:bg-gray-400 text-sm">
+                                    {isLoading === service.id ? "Procesando..." : "Guardar y Desplegar IA"}
+                                </button>
+                            </div>
                         </div>
 
                         {/* Leader Assignments */}
@@ -494,6 +586,7 @@ const PartidasYGruposTab: React.FC<{
   handleDeleteGroup: (groupName: string) => void;
 }> = ({ students, practicaGroups, setPracticaGroups, studentGroupAssignments, setStudentGroupAssignments, groupColors, setGroupColors, handleDeleteGroup }) => {
   const [filter, setFilter] = useState('');
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
 
   const handleAssignmentChange = (studentNre: string, group: string) => {
     setStudentGroupAssignments(prev => ({ ...prev, [studentNre]: group }));
@@ -519,76 +612,140 @@ const PartidasYGruposTab: React.FC<{
     setGroupColors(prev => ({ ...prev, [newGroupName]: newColor }));
   };
 
+  const handlePrintGroups = () => {
+    let html = '';
+    practicaGroups.forEach(group => {
+        const members = students.filter(s => studentGroupAssignments[s.nre] === group);
+        html += `
+            <div style="margin-bottom: 2rem; break-inside: avoid;">
+                <h3 style="font-size: 1.25rem; font-weight: bold;">${group} (${members.length} miembros)</h3>
+                ${members.length > 0 ? `
+                    <table style="margin-top: 0.5rem;">
+                        <thead><tr><th>Nombre</th><th>Apellidos</th></tr></thead>
+                        <tbody>
+                            ${members.map(m => `<tr><td>${m.nombre}</td><td>${m.apellido1} ${m.apellido2}</td></tr>`).join('')}
+                        </tbody>
+                    </table>
+                ` : '<p>No hay alumnos en este grupo.</p>'}
+            </div>
+        `;
+    });
+    printContent('Distribución de Grupos de Prácticas', html);
+    setIsExportMenuOpen(false);
+  };
+  
+  const handleExportExcelGroups = () => {
+    const dataToExport: any[] = [];
+    practicaGroups.forEach(group => {
+        const members = students.filter(s => studentGroupAssignments[s.nre] === group);
+        if (members.length > 0) {
+            members.forEach(m => {
+                dataToExport.push({
+                    'Grupo': group,
+                    'Nombre': m.nombre,
+                    'Apellidos': `${m.apellido1} ${m.apellido2}`,
+                    'NRE': m.nre
+                });
+            });
+        } else {
+             dataToExport.push({ 'Grupo': group, 'Nombre': 'Sin alumnos', 'Apellidos': '', 'NRE': '' });
+        }
+    });
+    exportToExcel(dataToExport, 'distribucion_grupos', 'Grupos');
+    setIsExportMenuOpen(false);
+  };
+
+
   const filteredStudents = useMemo(() => students.filter(student =>
       `${student.nombre} ${student.apellido1}`.toLowerCase().includes(filter.toLowerCase())), 
     [students, filter]);
 
   return (
-    <div className="flex flex-col md:flex-row gap-8">
-      <div className="w-full md:w-3/5 lg:pr-8 md:border-r md:border-gray-200">
-        <h4 className="text-xl font-bold text-gray-800 mb-4">Alumnos y Participación</h4>
-        <input type="text" placeholder="Buscar alumno..." value={filter} onChange={(e) => setFilter(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-teal-500"/>
-        <div className="bg-white p-2 sm:p-4 rounded-lg shadow-md space-y-4 max-h-[60vh] overflow-y-auto">
-          {filteredStudents.map(student => {
-            const studentGroup = studentGroupAssignments[student.nre];
-            const studentColorName = studentGroup ? groupColors[studentGroup] : 'default';
-            const studentColorStyle = colorStyles[studentColorName] || colorStyles.default;
-
-            return (
-              <div key={student.nre} className={`border-b pb-4 last:border-b-0 border-l-4 p-2 rounded-r-md ${studentColorStyle.border}`}>
-                <div className="flex items-center space-x-4">
-                  <img src={student.photoUrl || `https://i.pravatar.cc/150?u=${student.nre}`} alt="" className="h-12 w-12 rounded-full flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 truncate">{student.nombre} {student.apellido1}</p>
-                    <p className="text-sm text-gray-500">{student.grupo}</p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <select value={studentGroupAssignments[student.nre] || ''} onChange={(e) => handleAssignmentChange(student.nre, e.target.value)} className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-teal-500">
-                      <option value="" disabled>Sin grupo</option>
-                      {practicaGroups.map(g => <option key={g} value={g}>{g}</option>)}
-                    </select>
-                    <button onClick={() => handleRemoveFromGroup(student.nre)} title="Quitar de cualquier grupo" className="text-gray-400 hover:text-red-600"><TrashIcon className="h-5 w-5" /></button>
-                  </div>
-                </div>
-              </div>
-          )})}
-           {filteredStudents.length === 0 && (<p className="text-center text-gray-500 py-8">No se encontraron alumnos.</p>)}
-        </div>
-      </div>
-      <div className="w-full md:w-2/5">
-          <div className="flex justify-between items-center mb-4 gap-4">
-              <h4 className="text-xl font-bold text-gray-800">Vista de Grupos</h4>
-              <button onClick={handleAddNewGroup} className="bg-teal-500 text-white font-bold text-sm px-3 py-1.5 rounded-md hover:bg-teal-600">Añadir Grupo</button>
-          </div>
-          <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-          {practicaGroups.map((group) => {
-            const members = students.filter(s => studentGroupAssignments[s.nre] === group);
-            const colorName = groupColors[group] || 'default';
-            const { border: borderColor, bg: bgColor } = colorStyles[colorName] || colorStyles.default;
-            return (
-              <div key={group} className={`p-4 rounded-lg shadow-md border-l-4 ${borderColor} ${bgColor}`}>
-                <div className="flex items-center justify-between mb-3">
-                    <h5 className="font-bold text-gray-800">{group} ({members.length} miembros)</h5>
-                    <button onClick={() => handleDeleteGroup(group)} title={`Eliminar grupo ${group}`} className="text-gray-400 hover:text-red-600">
-                        <TrashIcon className="h-5 w-5" />
-                    </button>
-                </div>
-                <div className="space-y-2">
-                  {members.length > 0 ? members.map(member => (
-                    <div key={member.nre} className="flex items-center justify-between bg-white p-2 rounded-md shadow-sm">
-                      <div className="flex items-center space-x-2 min-w-0">
-                        <img src={member.photoUrl || `https://i.pravatar.cc/150?u=${member.nre}`} alt="" className="h-8 w-8 rounded-full flex-shrink-0" />
-                        <span className="text-sm font-medium truncate">{member.nombre} {member.apellido1}</span>
-                      </div>
-                      <button onClick={() => handleRemoveFromGroup(member.nre)} title="Quitar del grupo" className="text-gray-400 hover:text-red-500 ml-2"><CloseIcon className="h-4 w-4" /></button>
+    <div>
+        <div className="flex justify-between items-center mb-4">
+            <h4 className="text-xl font-bold text-gray-800">Distribución de Grupos y Alumnos</h4>
+            <div className="relative">
+                <button 
+                    onClick={() => setIsExportMenuOpen(prev => !prev)}
+                    className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center"
+                >
+                    <DownloadIcon className="h-5 w-5 mr-1"/>
+                    Exportar
+                </button>
+                {isExportMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border">
+                        <button onClick={handlePrintGroups} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Imprimir Grupos</button>
+                        <button onClick={handleExportExcelGroups} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Exportar a Excel</button>
                     </div>
-                  )) : <p className="text-sm text-gray-500 italic">No hay alumnos en este grupo.</p>}
+                )}
+            </div>
+        </div>
+        <div className="flex flex-col md:flex-row gap-8">
+            <div className="w-full md:w-3/5 lg:pr-8 md:border-r md:border-gray-200">
+                <h4 className="text-lg font-semibold text-gray-800 mb-4">Alumnos y Participación</h4>
+                <input type="text" placeholder="Buscar alumno..." value={filter} onChange={(e) => setFilter(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-teal-500"/>
+                <div className="bg-white p-2 sm:p-4 rounded-lg shadow-md space-y-4 max-h-[60vh] overflow-y-auto">
+                {filteredStudents.map(student => {
+                    const studentGroup = studentGroupAssignments[student.nre];
+                    const studentColorName = studentGroup ? groupColors[studentGroup] : 'default';
+                    const studentColorStyle = colorStyles[studentColorName] || colorStyles.default;
+
+                    return (
+                    <div key={student.nre} className={`border-b pb-4 last:border-b-0 border-l-4 p-2 rounded-r-md ${studentColorStyle.border}`}>
+                        <div className="flex items-center space-x-4">
+                        <img src={student.photoUrl || `https://i.pravatar.cc/150?u=${student.nre}`} alt="" className="h-12 w-12 rounded-full flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-gray-900 truncate">{student.nombre} {student.apellido1}</p>
+                            <p className="text-sm text-gray-500">{student.grupo}</p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <select value={studentGroupAssignments[student.nre] || ''} onChange={(e) => handleAssignmentChange(student.nre, e.target.value)} className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-teal-500">
+                            <option value="" disabled>Sin grupo</option>
+                            {practicaGroups.map(g => <option key={g} value={g}>{g}</option>)}
+                            </select>
+                            <button onClick={() => handleRemoveFromGroup(student.nre)} title="Quitar de cualquier grupo" className="text-gray-400 hover:text-red-600"><TrashIcon className="h-5 w-5" /></button>
+                        </div>
+                        </div>
+                    </div>
+                )})}
+                {filteredStudents.length === 0 && (<p className="text-center text-gray-500 py-8">No se encontraron alumnos.</p>)}
                 </div>
-              </div>
-            );
-          })}
-          </div>
-      </div>
+            </div>
+            <div className="w-full md:w-2/5">
+                <div className="flex justify-between items-center mb-4 gap-4">
+                    <h4 className="text-lg font-semibold text-gray-800">Vista de Grupos</h4>
+                    <button onClick={handleAddNewGroup} className="bg-teal-500 text-white font-bold text-sm px-3 py-1.5 rounded-md hover:bg-teal-600">Añadir Grupo</button>
+                </div>
+                <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+                {practicaGroups.map((group) => {
+                    const members = students.filter(s => studentGroupAssignments[s.nre] === group);
+                    const colorName = groupColors[group] || 'default';
+                    const { border: borderColor, bg: bgColor } = colorStyles[colorName] || colorStyles.default;
+                    return (
+                    <div key={group} className={`p-4 rounded-lg shadow-md border-l-4 ${borderColor} ${bgColor}`}>
+                        <div className="flex items-center justify-between mb-3">
+                            <h5 className="font-bold text-gray-800">{group} ({members.length} miembros)</h5>
+                            <button onClick={() => handleDeleteGroup(group)} title={`Eliminar grupo ${group}`} className="text-gray-400 hover:text-red-600">
+                                <TrashIcon className="h-5 w-5" />
+                            </button>
+                        </div>
+                        <div className="space-y-2">
+                        {members.length > 0 ? members.map(member => (
+                            <div key={member.nre} className="flex items-center justify-between bg-white p-2 rounded-md shadow-sm">
+                            <div className="flex items-center space-x-2 min-w-0">
+                                <img src={member.photoUrl || `https://i.pravatar.cc/150?u=${member.nre}`} alt="" className="h-8 w-8 rounded-full flex-shrink-0" />
+                                <span className="text-sm font-medium truncate">{member.nombre} {member.apellido1}</span>
+                            </div>
+                            <button onClick={() => handleRemoveFromGroup(member.nre)} title="Quitar del grupo" className="text-gray-400 hover:text-red-500 ml-2"><CloseIcon className="h-4 w-4" /></button>
+                            </div>
+                        )) : <p className="text-sm text-gray-500 italic">No hay alumnos en este grupo.</p>}
+                        </div>
+                    </div>
+                    );
+                })}
+                </div>
+            </div>
+        </div>
     </div>
   );
 };
