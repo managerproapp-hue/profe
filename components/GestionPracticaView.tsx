@@ -400,41 +400,69 @@ const PlanningTab: React.FC<{
     const handleDownloadPdfPlanning = (service: Service) => {
         const serviceAssignments = planningAssignments[service.id] || {};
         let html = '';
-
+    
         const leaders = LEADER_ROLES.map(role => {
             const studentNre = Object.keys(serviceAssignments).find(nre => serviceAssignments[nre] === role);
             const student = students.find(s => s.nre === studentNre);
-            return { role, studentName: student ? `${student.nombre} ${student.apellido1}` : 'Sin asignar' };
+            const studentName = student ? `${student.nombre} ${student.apellido1} ${student.apellido2 || ''}`.trim() : 'Sin asignar';
+            return { role, studentName };
         });
-
+    
+        // Leadership section
         html += `
-            <div style="margin-bottom: 2rem; break-inside: avoid;">
-                <h3 style="font-size: 1.25rem; font-weight: bold;">Roles de Liderazgo</h3>
-                <table style="margin-top: 0.5rem;">
-                    <thead><tr><th>Rol</th><th>Alumno</th></tr></thead>
-                    <tbody>${leaders.map(l => `<tr><td>${l.role}</td><td>${l.studentName}</td></tr>`).join('')}</tbody>
+            <div style="margin-bottom: 1.5rem; break-inside: avoid;">
+                <h3 style="font-size: 1.1rem; font-weight: bold;">Roles de Liderazgo</h3>
+                <table style="margin-top: 0.5rem; font-size: 0.8rem; width: 100%;">
+                    <thead>
+                        <tr>
+                            <th style="padding: 4px; text-align: left; border-bottom: 1px solid #ccc; width: 40%;">Rol</th>
+                            <th style="padding: 4px; text-align: left; border-bottom: 1px solid #ccc;">Alumno</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${leaders.map(l => `
+                            <tr style="border-top: 1px solid #eee;">
+                                <td style="padding: 4px;">${l.role}</td>
+                                <td style="padding: 4px;">${l.studentName}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
                 </table>
             </div>
         `;
-
+    
         const serviceGroups = [...new Set([...service.groupAssignments.comedor, ...service.groupAssignments.takeaway])];
-        serviceGroups.forEach(groupName => {
+        
+        // Groups section
+        const groupHtml = serviceGroups.map(groupName => {
             const studentsInGroup = students.filter(s => studentGroupAssignments[s.nre] === groupName);
-            html += `
-                <div style="margin-bottom: 2rem; break-inside: avoid;">
-                    <h3 style="font-size: 1.25rem; font-weight: bold;">Partida: ${groupName}</h3>
-                    <table style="margin-top: 0.5rem;">
-                        <thead><tr><th>Alumno</th><th>Rol Asignado</th></tr></thead>
+            return `
+                <div style="break-inside: avoid; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 0.75rem; page-break-inside: avoid;">
+                    <h3 style="font-size: 1rem; font-weight: bold; margin-bottom: 0.5rem;">Partida: ${groupName}</h3>
+                    <table style="margin-top: 0.5rem; font-size: 0.75rem; width: 100%;">
+                        <thead>
+                            <tr>
+                                <th style="padding: 4px; text-align: left; border-bottom: 1px solid #ccc;">Alumno</th>
+                                <th style="padding: 4px; text-align: left; border-bottom: 1px solid #ccc;">Rol Asignado</th>
+                            </tr>
+                        </thead>
                         <tbody>
                         ${studentsInGroup.map(student => {
                             const role = serviceAssignments[student.nre] || 'Sin asignar';
-                            return `<tr><td>${student.nombre} ${student.apellido1}</td><td>${role}</td></tr>`;
+                            const fullName = `${student.nombre} ${student.apellido1} ${student.apellido2 || ''}`.trim();
+                            return `
+                                <tr style="border-top: 1px solid #eee;">
+                                    <td style="padding: 4px;">${fullName}</td>
+                                    <td style="padding: 4px;">${role}</td>
+                                </tr>`;
                         }).join('')}
                         </tbody>
                     </table>
                 </div>
             `;
-        });
+        }).join('');
+    
+        html += `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">${groupHtml}</div>`;
         
         downloadAsPdf(`Planning: ${service.name} (${new Date(service.date).toLocaleDateString()})`, html, `planning_${service.name.replace(/\s+/g, '_')}`);
         setOpenExportMenu(null);
@@ -613,23 +641,26 @@ const PartidasYGruposTab: React.FC<{
   };
 
   const handleDownloadPdfGroups = () => {
-    let html = '';
+    let groupHtml = '';
     practicaGroups.forEach(group => {
         const members = students.filter(s => studentGroupAssignments[s.nre] === group);
-        html += `
-            <div style="margin-bottom: 2rem; break-inside: avoid;">
-                <h3 style="font-size: 1.25rem; font-weight: bold;">${group} (${members.length} miembros)</h3>
+        groupHtml += `
+            <div style="break-inside: avoid; margin-bottom: 1rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 0.75rem; page-break-inside: avoid;">
+                <h3 style="font-size: 1rem; font-weight: bold; margin-bottom: 0.5rem;">${group} (${members.length} miembros)</h3>
                 ${members.length > 0 ? `
-                    <table style="margin-top: 0.5rem;">
-                        <thead><tr><th>Nombre</th><th>Apellidos</th></tr></thead>
+                    <table style="margin-top: 0.5rem; width: 100%;">
+                        <thead><tr><th style="font-size: 0.75rem; text-align: left; padding: 4px;">Nombre Completo</th></tr></thead>
                         <tbody>
-                            ${members.map(m => `<tr><td>${m.nombre}</td><td>${m.apellido1} ${m.apellido2}</td></tr>`).join('')}
+                            ${members.map(m => `<tr style="font-size: 0.75rem;"><td style="padding: 4px;">${m.nombre} ${m.apellido1} ${m.apellido2 || ''}</td></tr>`).join('')}
                         </tbody>
                     </table>
-                ` : '<p>No hay alumnos en este grupo.</p>'}
+                ` : '<p style="font-size: 0.75rem; color: #6b7280;">No hay alumnos en este grupo.</p>'}
             </div>
         `;
     });
+
+    const html = `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">${groupHtml}</div>`;
+    
     downloadAsPdf('Distribución de Grupos de Prácticas', html, 'distribucion_grupos');
     setIsExportMenuOpen(false);
   };
