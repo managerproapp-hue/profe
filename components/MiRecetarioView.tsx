@@ -1,264 +1,134 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { FullRecipe, Product } from '../types';
-import { INITIAL_RECIPES, RECIPE_CATEGORIES } from '../constants';
-import { SparklesIcon, PhotoIcon, DocumentTextIcon, CodeBracketIcon, PencilIcon } from './icons';
-import { uuidv4 } from '../utils';
-import RecipeDetailView from './RecipeDetailView';
-import RecipeFormView from './RecipeFormView';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { Recipe, Product, RecipeIngredient, RecipeStep, Elaboration } from '../types';
+import { RAW_PRODUCTS, normalizeCategory, ALLERGENS, PRODUCT_UNITS, PRODUCT_CATEGORIES, RECIPE_CATEGORIES } from '../constants';
+import { PencilIcon, CodeBracketIcon, PlusIcon, TrashIcon, BackIcon, UploadIcon, DownloadIcon, EyeIcon, CheckIcon, XIcon } from './icons';
 
-const MOCK_CURRENT_USER = { email: 'profesor@example.com' };
+// --- HELPER FUNCTIONS ---
+const uuidv4 = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+  const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+  return v.toString(16);
+});
 
-// --- Main View ---
-
-interface MiRecetarioViewProps {
-    products: Product[];
-    setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
-}
-
-const MiRecetarioView: React.FC<MiRecetarioViewProps> = ({ products, setProducts }) => {
-    const [recipes, setRecipes] = useState<FullRecipe[]>(() => {
-        const saved = localStorage.getItem('cocina-recetario');
-        return saved ? JSON.parse(saved) : INITIAL_RECIPES;
-    });
-
-    useEffect(() => {
-        localStorage.setItem('cocina-recetario', JSON.stringify(recipes));
-    }, [recipes]);
-
-    const [viewState, setViewState] = useState<{ mode: 'list' | 'detail' | 'form'; recipeId?: string }>({ mode: 'list' });
-
-    // State for main list filters
-    const [searchTerm, setSearchTerm] = useState('');
-    const [categoryFilter, setCategoryFilter] = useState('All');
-    const [scopeFilter, setScopeFilter] = useState('All'); // 'All', 'Mine', 'Public'
-
-    const [isAiModalOpen, setIsAiModalOpen] = useState(false);
-
-    const filteredRecipes = useMemo(() => {
-        return recipes.filter(r => {
-            const searchMatch = r.name.toLowerCase().includes(searchTerm.toLowerCase());
-            const categoryMatch = categoryFilter === 'All' || r.category === categoryFilter;
-            const scopeMatch = scopeFilter === 'All'
-                || (scopeFilter === 'Mine' && r.authorEmail === MOCK_CURRENT_USER.email)
-                || (scopeFilter === 'Public' && r.isPublic && r.authorEmail !== MOCK_CURRENT_USER.email);
-            return searchMatch && categoryMatch && scopeMatch;
-        }).sort((a, b) => a.name.localeCompare(b.name));
-    }, [recipes, searchTerm, categoryFilter, scopeFilter]);
-
-
-    const handleSaveRecipe = (recipeToSave: FullRecipe) => {
-        const isNew = !recipes.some(r => r.id === recipeToSave.id);
-        if (isNew) {
-            setRecipes(prev => [recipeToSave, ...prev]);
-        } else {
-            setRecipes(prev => prev.map(r => r.id === recipeToSave.id ? recipeToSave : r));
-        }
-        setViewState({ mode: 'list' });
-    }
-
-    const handleDeleteRecipe = (recipeId: string) => {
-        if (window.confirm("¿Seguro que quieres eliminar esta receta de forma permanente?")) {
-            setRecipes(prev => prev.filter(r => r.id !== recipeId));
-            setViewState({ mode: 'list' });
-        }
-    };
-    
-    const handleMakeMine = (recipeId: string) => {
-        const originalRecipe = recipes.find(r => r.id === recipeId);
-        if (!originalRecipe) return;
-
-        const newRecipe: FullRecipe = {
-            ...JSON.parse(JSON.stringify(originalRecipe)), // Deep copy
-            id: uuidv4(),
-            authorEmail: MOCK_CURRENT_USER.email,
-            isPublic: false,
-            name: `${originalRecipe.name} (Copia)`
-        };
-        
-        setRecipes(prev => [newRecipe, ...prev]);
-        setViewState({ mode: 'form', recipeId: newRecipe.id });
-    };
-
-    // Mock AI responses
-    const handleGenerateWithAI = (prompt: string) => {
-        console.log("Mock AI generation for:", prompt);
-        const newRecipe: FullRecipe = {
-            id: uuidv4(),
-            name: `Receta de IA: ${prompt}`,
-            category: 'Carnes',
-            authorEmail: MOCK_CURRENT_USER.email,
-            isPublic: false,
-            yield: '4 raciones',
-            ingredients: [{ productId: '', productName: 'Ingrediente de ejemplo', quantity: '100g' }],
-            elaboration: [{ id: uuidv4(), description: 'Paso de elaboración generado por IA.' }],
-            serviceDetails: { customerDescription: 'Un plato delicioso inspirado en tus ideas.' },
-        };
-        setRecipes(prev => [newRecipe, ...prev]);
-        setIsAiModalOpen(false);
-        setViewState({ mode: 'form', recipeId: newRecipe.id });
-    };
-
-    const handleImportFile = (type: 'image' | 'pdf' | 'doc' | 'json') => {
-        console.log(`Mock import for file type: ${type}`);
-         const newRecipe: FullRecipe = {
-            id: uuidv4(),
-            name: `Receta importada de ${type.toUpperCase()}`,
-            category: 'Entrantes',
-            authorEmail: MOCK_CURRENT_USER.email,
-            isPublic: false,
-            yield: '2 raciones',
-            ingredients: [{ productId: '', productName: 'Tomate', quantity: '2 unidades' }],
-            elaboration: [{ id: uuidv4(), description: 'Paso extraído del documento.' }],
-            serviceDetails: {},
-        };
-        setRecipes(prev => [newRecipe, ...prev]);
-        setViewState({ mode: 'form', recipeId: newRecipe.id });
-    }
-
-    const recipeForView = useMemo(() => {
-        if (viewState.mode === 'list' || !viewState.recipeId) return undefined;
-        return recipes.find(r => r.id === viewState.recipeId);
-    }, [viewState, recipes]);
-
-    if (viewState.mode === 'form') {
-        return <RecipeFormView 
-            initialRecipe={recipeForView}
-            products={products}
-            onSave={handleSaveRecipe}
-            onCancel={() => setViewState({ mode: 'list' })}
-        />;
-    }
-
-    if (viewState.mode === 'detail') {
-        if (!recipeForView) {
-            // Should not happen, but as a fallback:
-            return <div className="text-center p-8">Receta no encontrada. <button onClick={() => setViewState({ mode: 'list' })}>Volver a la lista</button></div>;
-        }
-        return <RecipeDetailView 
-            recipe={recipeForView}
-            products={products}
-            onBack={() => setViewState({ mode: 'list' })}
-            onEdit={(id) => setViewState({ mode: 'form', recipeId: id })}
-            onDelete={handleDeleteRecipe}
-            onMakeMine={handleMakeMine}
-        />;
-    }
-
-    // --- MAIN LIST VIEW ---
-    return (
-        <div className="space-y-6">
-            <div className="text-center">
-                <h2 className="text-2xl font-bold text-gray-800">Mi Recetario</h2>
-                <p className="mt-1 text-gray-600">Busca, crea y gestiona tus fichas técnicas de cocina.</p>
-            </div>
-
-            {/* Creation Panel */}
-            <div className="bg-white p-4 rounded-lg shadow-md">
-                <h3 className="font-bold text-lg text-center mb-3">Crear nueva ficha técnica</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                    <CreateButton icon={<PencilIcon />} label="Manual" onClick={() => setViewState({mode: 'form'})} />
-                    <CreateButton icon={<SparklesIcon />} label="con IA" onClick={() => setIsAiModalOpen(true)} />
-                    <CreateButton icon={<PhotoIcon />} label="Imagen" onClick={() => handleImportFile('image')} />
-                    <CreateButton icon={<DocumentTextIcon />} label="PDF" onClick={() => handleImportFile('pdf')} />
-                    <CreateButton icon={<DocumentTextIcon />} label="Doc" onClick={() => handleImportFile('doc')} />
-                    <CreateButton icon={<CodeBracketIcon />} label="JSON" onClick={() => handleImportFile('json')} />
-                </div>
-            </div>
-
-            {/* Filters and Search */}
-            <div className="bg-white p-4 rounded-lg shadow-md grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-                <input
-                    type="text"
-                    placeholder="Buscar por nombre..."
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                    className="md:col-span-1 w-full p-2 border border-gray-300 rounded-md"
-                />
-                <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="w-full p-2 border border-gray-300 rounded-md">
-                    <option value="All">Todas las categorías</option>
-                    {RECIPE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-                <select value={scopeFilter} onChange={e => setScopeFilter(e.target.value)} className="w-full p-2 border border-gray-300 rounded-md">
-                    <option value="All">Todas las recetas</option>
-                    <option value="Mine">Mis recetas</option>
-                    <option value="Public">Recetas públicas</option>
-                </select>
-            </div>
-
-            {/* Recipe Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {filteredRecipes.map(recipe => (
-                    <RecipeCard key={recipe.id} recipe={recipe} onSelect={() => setViewState({ mode: 'detail', recipeId: recipe.id })}/>
-                ))}
-            </div>
-             {filteredRecipes.length === 0 && (
-                <div className="col-span-full text-center py-12 bg-white rounded-lg shadow-md">
-                    <p className="text-gray-500">No se encontraron recetas con los filtros actuales.</p>
-                </div>
-            )}
-            
-            {/* Modals */}
-            {isAiModalOpen && <GenerateWithAIModal onGenerate={handleGenerateWithAI} onClose={() => setIsAiModalOpen(false)} />}
-        </div>
-    );
+const EMPTY_ELABORATION: Elaboration = { id: uuidv4(), name: 'Elaboración Principal', ingredients: [], steps: [{ id: uuidv4(), description: '' }] };
+const EMPTY_RECIPE: Omit<Recipe, 'id' | 'authorId' | 'createdAt' | 'updatedAt'> = {
+    name: '',
+    category: RECIPE_CATEGORIES[0],
+    servings: 1,
+    description: '',
+    serviceNotes: '',
+    imageUrl: undefined,
+    elaborations: [JSON.parse(JSON.stringify(EMPTY_ELABORATION))],
+    visibility: 'private',
 };
 
-// --- Child Components for MiRecetarioView ---
+// --- SUB-COMPONENTS ---
 
-// FIX: The props for the icon element were not correctly typed, causing an error with cloneElement. The props are passed to a wrapper that sets the className.
-const CreateButton: React.FC<{ icon: React.ReactElement<{ className?: string }>, label: string, onClick: () => void }> = ({ icon, label, onClick }) => (
-    <button onClick={onClick} className="flex flex-col items-center justify-center gap-2 p-3 bg-gray-50 hover:bg-teal-50 border border-gray-200 hover:border-teal-300 rounded-lg transition-colors text-sm font-semibold text-gray-700 hover:text-teal-800">
-        {React.cloneElement(icon, { className: "h-6 w-6" })}
-        <span>{label}</span>
-    </button>
-);
-
-const RecipeCard: React.FC<{ recipe: FullRecipe, onSelect: () => void }> = ({ recipe, onSelect }) => (
-    <div onClick={onSelect} className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 cursor-pointer flex flex-col overflow-hidden">
-        <div className="h-40 bg-gray-200 flex items-center justify-center">
-            {recipe.photoUrl ? <img src={recipe.photoUrl} alt={recipe.name} className="w-full h-full object-cover" /> : <PhotoIcon className="h-16 w-16 text-gray-400" />}
+const RecipeCard: React.FC<{ recipe: Recipe; onSelect: () => void; }> = ({ recipe, onSelect }) => (
+    <div onClick={onSelect} className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 cursor-pointer flex flex-col overflow-hidden group">
+        <div className="h-40 bg-gray-200 flex items-center justify-center overflow-hidden">
+            {recipe.imageUrl ? (
+                <img src={recipe.imageUrl} alt={recipe.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+            ) : (
+                <KitchenIcon className="h-16 w-16 text-gray-400" />
+            )}
         </div>
         <div className="p-4 flex-grow flex flex-col">
-            <h4 className="font-bold text-gray-800 flex-grow">{recipe.name}</h4>
-            <div className="flex justify-between items-center mt-2 text-xs">
-                 <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full">{recipe.category}</span>
-                 {recipe.authorEmail === MOCK_CURRENT_USER.email 
-                    ? <span className="px-2 py-1 bg-teal-100 text-teal-800 rounded-full font-semibold">Mía</span>
-                    : recipe.isPublic && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full font-semibold">Pública</span>
-                 }
+            <span className="text-xs font-semibold bg-teal-100 text-teal-800 px-2 py-0.5 rounded-full self-start">{recipe.category}</span>
+            <h3 className="mt-2 font-bold text-gray-800 text-lg flex-grow">{recipe.name}</h3>
+            <div className="mt-2 text-xs text-gray-500">
+                {recipe.authorId === 'currentUser' ? 'Mía' : 'Pública'}
             </div>
         </div>
     </div>
 );
 
-const GenerateWithAIModal: React.FC<{onGenerate: (prompt: string) => void, onClose: () => void}> = ({onGenerate, onClose}) => {
-    const [prompt, setPrompt] = useState('');
+
+const KitchenIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 21v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21m0 0h4.5V3.545M12.75 21h7.5V10.75M2.25 21h1.5m18 0h-18M2.25 9l4.5-1.636M18.75 3l-1.5.545m0 6.205l3 1m-3-1l-3-1m3 1v5.25c0 .621-.504 1.125-1.125-1.125h-2.25c-.621 0-1.125-.504-1.125-1.125V10.5m0 0L12 9M12 9l-3 1m0 0l-4.5 1.636M12 9V3.545" /></svg>
+);
+
+const AddProductModal: React.FC<{
+    initialName: string;
+    onSave: (newProduct: Product) => void;
+    onCancel: () => void;
+}> = ({ initialName, onSave, onCancel }) => {
+    const [formData, setFormData] = useState<Omit<Product, 'id'>>({
+        name: initialName,
+        category: PRODUCT_CATEGORIES[0],
+        price: 0,
+        unit: 'kg',
+        allergens: []
+    });
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: name === 'price' ? parseFloat(value) : value }));
+    };
+
+    const handleAllergenChange = (allergen: string) => {
+        setFormData(prev => {
+            const newAllergens = prev.allergens.includes(allergen)
+                ? prev.allergens.filter(a => a !== allergen)
+                : [...prev.allergens, allergen];
+            return { ...prev, allergens: newAllergens };
+        });
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if(prompt.trim()) {
-            onGenerate(prompt);
+        if (!formData.name.trim()) {
+            alert('El nombre del producto no puede estar vacío.');
+            return;
         }
-    }
+        const newProduct: Product = { ...formData, id: uuidv4(), name: formData.name.trim() };
+        onSave(newProduct);
+    };
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-lg">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl transform transition-all">
                 <form onSubmit={handleSubmit}>
-                    <div className="p-6">
-                        <h3 className="text-xl font-bold">Generar Receta con IA</h3>
-                        <p className="text-sm text-gray-600 mt-2">Describe la receta que tienes en mente. Por ejemplo: "un postre con chocolate, naranja y un toque picante".</p>
-                        <textarea
-                            value={prompt}
-                            onChange={e => setPrompt(e.target.value)}
-                            placeholder="Describe tu idea aquí..."
-                            className="w-full p-2 border rounded-md mt-4 h-28"
-                            required
-                        />
+                    <div className="p-6 border-b">
+                        <h3 className="text-xl font-bold text-gray-800">Crear Nuevo Producto</h3>
                     </div>
-                    <div className="bg-gray-50 p-4 flex justify-end gap-3 rounded-b-lg">
-                        <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 rounded-md">Cancelar</button>
-                        <button type="submit" className="px-4 py-2 bg-teal-500 text-white font-bold rounded-md hover:bg-teal-600">Generar</button>
+                    <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Nombre del Producto</label>
+                            <input type="text" name="name" value={formData.name} onChange={handleInputChange} required className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm"/>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                             <div>
+                                <label className="block text-sm font-medium text-gray-700">Categoría</label>
+                                <select name="category" value={formData.category} onChange={handleInputChange} required className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm bg-white">
+                                    {PRODUCT_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                                </select>
+                            </div>
+                             <div>
+                                <label className="block text-sm font-medium text-gray-700">Unidad</label>
+                                <select name="unit" value={formData.unit} onChange={handleInputChange} required className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm bg-white">
+                                    {PRODUCT_UNITS.map(unit => <option key={unit} value={unit}>{unit}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                         <div>
+                            <label className="block text-sm font-medium text-gray-700">Coste (Precio)</label>
+                            <input type="number" name="price" value={formData.price} onChange={handleInputChange} required min="0" step="0.01" className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm"/>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Alérgenos</label>
+                            <div className="mt-2 grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                {ALLERGENS.map(allergen => (
+                                    <label key={allergen} className="flex items-center text-sm">
+                                        <input type="checkbox" checked={formData.allergens.includes(allergen)} onChange={() => handleAllergenChange(allergen)} className="h-4 w-4 rounded border-gray-300 text-teal-600"/>
+                                        <span className="ml-2 text-gray-700">{allergen}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    <div className="bg-gray-50 p-4 flex justify-end gap-4">
+                        <button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
+                        <button type="submit" className="px-6 py-2 bg-teal-500 text-white font-bold rounded-md hover:bg-teal-600">Crear y Añadir</button>
                     </div>
                 </form>
             </div>
@@ -266,4 +136,68 @@ const GenerateWithAIModal: React.FC<{onGenerate: (prompt: string) => void, onClo
     );
 };
 
-export default MiRecetarioView;
+
+const RecipeFormView: React.FC<{
+    initialRecipe: Recipe | null;
+    products: Product[];
+    recipeCategories: string[];
+    onSave: (recipe: Omit<Recipe, 'id' | 'authorId' | 'createdAt' | 'updatedAt'>) => void;
+    onCancel: () => void;
+    onAddNewProduct: (newProduct: Product) => void;
+}> = ({ initialRecipe, products, recipeCategories, onSave, onCancel, onAddNewProduct }) => {
+    const [formData, setFormData] = useState<Omit<Recipe, 'id' | 'authorId' | 'createdAt' | 'updatedAt'>>(() => 
+        initialRecipe 
+            ? { ...initialRecipe } 
+            : JSON.parse(JSON.stringify(EMPTY_RECIPE)) // Deep copy
+    );
+    
+    const [ingredientSearch, setIngredientSearch] = useState<{ elabId: string; term: string }>({ elabId: '', term: '' });
+    const [isAddingProduct, setIsAddingProduct] = useState<string | null>(null);
+    const imageUploadRef = useRef<HTMLInputElement>(null);
+
+    const handleFieldChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: name === 'servings' ? Math.max(1, parseInt(value)) : value }));
+    };
+
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (event) => setFormData(prev => ({ ...prev, imageUrl: event.target?.result as string }));
+            reader.readAsDataURL(file);
+        }
+    };
+    
+    const addElaboration = () => {
+        const newElaboration = { id: uuidv4(), name: `Elaboración ${formData.elaborations.length + 1}`, ingredients: [], steps: [{id: uuidv4(), description: ''}] };
+        setFormData(prev => ({ ...prev, elaborations: [...prev.elaborations, newElaboration] }));
+    };
+
+    const removeElaboration = (elabId: string) => {
+        setFormData(prev => ({ ...prev, elaborations: prev.elaborations.filter(e => e.id !== elabId) }));
+    };
+
+    const updateElaboration = (elabId: string, field: keyof Elaboration, value: any) => {
+        setFormData(prev => ({
+            ...prev,
+            elaborations: prev.elaborations.map(e => e.id === elabId ? { ...e, [field]: value } : e)
+        }));
+    };
+
+    const addIngredient = (elabId: string, product: Product) => {
+        const newIngredient: RecipeIngredient = { productId: product.id, quantity: 1, unit: product.unit };
+        const newElaborations = formData.elaborations.map(e => {
+            if (e.id === elabId) {
+                if (e.ingredients.some(ing => ing.productId === product.id)) return e;
+                return { ...e, ingredients: [...e.ingredients, newIngredient] };
+            }
+            return e;
+        });
+        setFormData(prev => ({...prev, elaborations: newElaborations}));
+        setIngredientSearch({ elabId: '', term: '' });
+    };
+
+    const removeIngredient = (elabId: string, productId: string) => {
+        const newElaborations = formData.elaborations.map(e => 
+            e.id === elabId ? { ...e, ingredients: e.ingredients.filter(i => i

@@ -2,12 +2,14 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Product } from '../types';
 import { PRODUCT_CATEGORIES, PRODUCT_UNITS, ALLERGENS, ALLERGEN_MAP, normalizeCategory } from '../constants';
 import { PlusIcon, PencilIcon, TrashIcon, UploadIcon, DownloadIcon, CheckIcon, XIcon } from './icons';
-import { uuidv4 } from '../utils';
 
-interface CatalogoProductosViewProps {
-    products: Product[];
-    setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
-}
+// Simple UUID generator
+const uuidv4 = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+};
 
 const EMPTY_PRODUCT: Omit<Product, 'id'> = {
     name: '',
@@ -17,12 +19,26 @@ const EMPTY_PRODUCT: Omit<Product, 'id'> = {
     allergens: [],
 };
 
-const CatalogoProductosView: React.FC<CatalogoProductosViewProps> = ({ products, setProducts }) => {
+const CatalogoProductosView: React.FC = () => {
+    const [products, setProducts] = useState<Product[]>(() => {
+        try {
+            const saved = localStorage.getItem('cocina-catalogo-productos');
+            return saved ? JSON.parse(saved) : [];
+        } catch (e) {
+            console.error("Failed to parse products from localStorage", e);
+            return [];
+        }
+    });
+
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [formData, setFormData] = useState<Omit<Product, 'id'>>(EMPTY_PRODUCT);
     const [searchTerm, setSearchTerm] = useState('');
     const [stagedForImport, setStagedForImport] = useState<{ fileName: string; products: Product[] } | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        localStorage.setItem('cocina-catalogo-productos', JSON.stringify(products));
+    }, [products]);
 
     useEffect(() => {
         if (editingProduct) {
