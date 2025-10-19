@@ -275,6 +275,10 @@ const CatalogoProductosView: React.FC = () => {
                 )}
 
                 <div className="bg-white p-4 rounded-lg shadow-md">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-bold text-gray-700">Catálogo de Productos</h3>
+                        <span className="text-sm font-semibold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{products.length} en total</span>
+                    </div>
                     <input
                         type="text"
                         placeholder="Buscar producto o categoría..."
@@ -282,7 +286,7 @@ const CatalogoProductosView: React.FC = () => {
                         onChange={e => setSearchTerm(e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md mb-4"
                     />
-                    <div className="overflow-y-auto max-h-[60vh] pr-2">
+                    <div className="overflow-y-auto max-h-[55vh] pr-2">
                         <table className="min-w-full text-sm">
                             <thead className="bg-gray-50">
                                 <tr>

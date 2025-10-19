@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Recipe, Product, RecipeIngredient, RecipeStep, Elaboration } from '../types';
 import { ALLERGENS, PRODUCT_UNITS, PRODUCT_CATEGORIES, RECIPE_CATEGORIES } from '../constants';
-import { PencilIcon, PlusIcon, TrashIcon, BackIcon, UploadIcon, EyeIcon } from './icons';
+import { PencilIcon, PlusIcon, TrashIcon, BackIcon, UploadIcon, EyeIcon, DownloadIcon } from './icons';
 
 // --- HELPER FUNCTIONS ---
 const uuidv4 = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -20,6 +20,50 @@ const EMPTY_RECIPE: Omit<Recipe, 'id' | 'authorId' | 'createdAt' | 'updatedAt'> 
     elaborations: [JSON.parse(JSON.stringify(EMPTY_ELABORATION))],
     visibility: 'private',
 };
+
+const RECIPE_TEMPLATE_JSON = `{
+  "name": "Nombre de la Receta (ej. Solomillo al Oporto)",
+  "category": "Categoría de la receta (ej. Carnes, Postres, etc.)",
+  "servings": 10, "// Número de raciones que produce esta receta",
+  "description": "Breve descripción del plato, su origen o características principales.",
+  "serviceNotes": "Anotaciones para el momento del servicio, como el tipo de plato, sugerencias de emplatado, etc.",
+  "elaborations": [
+    {
+      "name": "Nombre de la primera elaboración (ej. Salsa Oporto)",
+      "ingredients": [
+        {
+          "name": "Nombre del producto (ej. Vino de Oporto)",
+          "quantity": 0.5,
+          "unit": "litro"
+        },
+        {
+          "name": "Cebolla",
+          "quantity": 0.2,
+          "unit": "kg"
+        }
+      ],
+      "steps": [
+        "Descripción del primer paso de esta elaboración.",
+        "Descripción del segundo paso."
+      ]
+    },
+    {
+      "name": "Nombre de la segunda elaboración (ej. Guarnición de patatas)",
+      "ingredients": [
+        {
+          "name": "Patata",
+          "quantity": 1.5,
+          "unit": "kg"
+        }
+      ],
+      "steps": [
+        "Paso 1 para la guarnición.",
+        "Paso 2 para la guarnición."
+      ]
+    }
+  ]
+}`;
+
 
 const KitchenIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 21v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21m0 0h4.5V3.545M12.75 21h7.5V10.75M2.25 21h1.5m18 0h-18M2.25 9l4.5-1.636M18.75 3l-1.5.545m0 6.205l3 1m-3-1l-3-1m3 1v5.25c0 .621-.504 1.125-1.125-1.125h-2.25c-.621 0-1.125-.504-1.125-1.125V10.5m0 0L12 9M12 9l-3 1m0 0l-4.5 1.636M12 9V3.545" /></svg>
@@ -285,7 +329,7 @@ const RecipeFormView: React.FC<{
                 <div className="flex-grow space-y-6">
                     <div className="bg-white p-6 rounded-lg shadow-md">
                         <div className="flex justify-between items-start">
-                             <h2 className="text-2xl font-bold text-gray-800 mb-4">{initialRecipe ? 'Editar Ficha Técnica' : 'Nueva Ficha Técnica'}</h2>
+                             <h2 className="text-2xl font-bold text-gray-800 mb-4">{initialRecipe?.id ? 'Editar Ficha Técnica' : 'Nueva Ficha Técnica'}</h2>
                              <button type="button" onClick={onCancel} className="flex items-center text-sm text-gray-600 hover:text-black font-semibold">
                                 <BackIcon className="h-4 w-4 mr-1" /> Volver
                             </button>
@@ -421,7 +465,7 @@ const RecipeFormView: React.FC<{
                             ) : <p className="text-sm text-gray-500 italic">No se han detectado alérgenos.</p>}
                         </div>
                          <button type="submit" className="w-full px-6 py-3 bg-teal-500 text-white font-bold rounded-md hover:bg-teal-600 text-lg">
-                            {initialRecipe ? 'Actualizar Ficha Técnica' : 'Guardar Ficha Técnica'}
+                            {initialRecipe?.id ? 'Actualizar Ficha Técnica' : 'Guardar Ficha Técnica'}
                         </button>
                     </div>
                 </div>
@@ -477,6 +521,7 @@ const MiRecetarioView: React.FC = () => {
     const [view, setView] = useState<'list' | 'form' | 'detail'>('list');
     const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const importInputRef = useRef<HTMLInputElement>(null);
 
     const allRecipeCategories = useMemo(() => {
         const categories = new Set(RECIPE_CATEGORIES);
@@ -532,6 +577,71 @@ const MiRecetarioView: React.FC = () => {
         localStorage.setItem('cocina-catalogo-productos', JSON.stringify(updatedProducts));
     };
 
+    const handleDownloadTemplate = () => {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(RECIPE_TEMPLATE_JSON);
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", "plantilla_ficha_tecnica.json");
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    };
+
+    const handleImportJson = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const imported = JSON.parse(e.target?.result as string);
+                
+                const missingIngredients: string[] = [];
+                const mappedElaborations: Elaboration[] = (imported.elaborations || []).map((elab: any) => {
+                    const mappedIngredients: RecipeIngredient[] = (elab.ingredients || []).map((ing: any) => {
+                        const product = products.find(p => p.name.toLowerCase() === ing.name?.toLowerCase());
+                        if (product) {
+                            return { productId: product.id, quantity: ing.quantity || 0, unit: ing.unit || product.unit };
+                        } else {
+                            missingIngredients.push(ing.name || 'Desconocido');
+                            return null;
+                        }
+                    }).filter((ing: RecipeIngredient | null): ing is RecipeIngredient => ing !== null);
+                    
+                    return {
+                        id: uuidv4(),
+                        name: elab.name || 'Elaboración sin nombre',
+                        ingredients: mappedIngredients,
+                        steps: (elab.steps || []).map((step: string) => ({ id: uuidv4(), description: step }))
+                    };
+                });
+
+                const newRecipeData: Omit<Recipe, 'id' | 'authorId' | 'createdAt' | 'updatedAt'> = {
+                    ...EMPTY_RECIPE,
+                    name: imported.name || 'Receta Sin Nombre',
+                    category: imported.category || RECIPE_CATEGORIES[0],
+                    servings: imported.servings || 1,
+                    description: imported.description || '',
+                    serviceNotes: imported.serviceNotes || '',
+                    elaborations: mappedElaborations.length > 0 ? mappedElaborations : [JSON.parse(JSON.stringify(EMPTY_ELABORATION))]
+                };
+                
+                if (missingIngredients.length > 0) {
+                    alert(`Importación parcial: Los siguientes productos no se encontraron en tu catálogo y no fueron añadidos:\n\n- ${missingIngredients.join('\n- ')}\n\nPor favor, añádelos manualmente.`);
+                }
+                
+                setSelectedRecipe(newRecipeData as Recipe); // Cast to Recipe for the form, ID will be generated on save.
+                setView('form');
+
+            } catch (err) {
+                alert(`Error al procesar el archivo JSON: ${(err as Error).message}`);
+            } finally {
+                if(importInputRef.current) importInputRef.current.value = "";
+            }
+        };
+        reader.readAsText(file);
+    };
+
     const filteredRecipes = useMemo(() => {
         return recipes.filter(r => 
             r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -565,10 +675,20 @@ const MiRecetarioView: React.FC = () => {
                     <h2 className="text-2xl font-bold text-gray-800">Mi Recetario</h2>
                     <p className="text-gray-500 mt-1">{recipes.length} recetas en total</p>
                 </div>
-                <button onClick={handleAddNewRecipe} className="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center self-end md:self-center">
-                    <PlusIcon className="h-5 w-5 mr-2" />
-                    Nueva Ficha Técnica
-                </button>
+                <div className="flex items-center gap-2 self-end md:self-center">
+                    <button onClick={handleDownloadTemplate} title="Descargar plantilla para IA" className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-3 rounded-lg transition-colors flex items-center">
+                        <DownloadIcon className="h-5 w-5"/>
+                    </button>
+                     <button onClick={() => importInputRef.current?.click()} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center">
+                        <UploadIcon className="h-5 w-5 mr-2" />
+                        Importar Ficha
+                    </button>
+                    <input type="file" ref={importInputRef} onChange={handleImportJson} accept=".json" className="hidden" />
+                    <button onClick={handleAddNewRecipe} className="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center">
+                        <PlusIcon className="h-5 w-5 mr-2" />
+                        Nueva Ficha
+                    </button>
+                </div>
             </div>
           
             {latestRecipes.length > 0 && (
