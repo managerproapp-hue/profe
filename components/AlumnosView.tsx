@@ -5,7 +5,7 @@ import StudentDetailModal from './StudentDetailModal';
 import ImportModal from './ImportModal';
 import AddEditStudentModal from './EditStudentModal';
 import { EyeIcon, PencilIcon, TrashIcon, ViewGridIcon, ViewListIcon, PlusIcon, DownloadIcon } from './icons';
-import { printContent, exportToExcel } from './printUtils';
+import { downloadAsPdf, exportToExcel } from './printUtils';
 
 interface AlumnosViewProps {
   students: Student[];
@@ -101,7 +101,7 @@ const AlumnosView: React.FC<AlumnosViewProps> = ({ students, setStudents }) => {
     );
   }, [students, filter]);
   
-  const handlePrintList = () => {
+  const handleDownloadPdfList = () => {
     const tableHtml = `
       <table>
         <thead>
@@ -126,7 +126,7 @@ const AlumnosView: React.FC<AlumnosViewProps> = ({ students, setStudents }) => {
         </tbody>
       </table>
     `;
-    printContent('Listado de Alumnos', tableHtml);
+    downloadAsPdf('Listado de Alumnos', tableHtml, 'listado_alumnos');
     setIsExportMenuOpen(false);
   };
 
@@ -181,7 +181,7 @@ const AlumnosView: React.FC<AlumnosViewProps> = ({ students, setStudents }) => {
                 </button>
                 {isExportMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border">
-                        <button onClick={handlePrintList} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Imprimir Lista</button>
+                        <button onClick={handleDownloadPdfList} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Descargar PDF</button>
                         <button onClick={handleExportExcel} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Exportar a Excel</button>
                     </div>
                 )}

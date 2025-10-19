@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Service, Recipe, Product, MenusState, Menu, MenuApartado } from '../types';
-import { printContent, exportToExcel } from './printUtils';
+import { downloadAsPdf, exportToExcel } from './printUtils';
 
 // Helper function to safely parse JSON from localStorage
 const safeJsonParse = <T,>(key: string, defaultValue: T): T => {
@@ -95,10 +95,10 @@ const PedidoDetalle: React.FC<{
         return Object.entries(grouped).sort(([catA], [catB]) => catA.localeCompare(catB));
     }, [pedido]);
     
-    const handlePrint = () => {
+    const handleDownloadPdf = () => {
         const printableElement = document.getElementById(`printable-pedido-${service.id}`);
         if(printableElement) {
-             printContent(`Pedido para: ${service.name} (${new Date(service.date).toLocaleDateString()})`, printableElement.innerHTML);
+             downloadAsPdf(`Pedido para: ${service.name} (${new Date(service.date).toLocaleDateString()})`, printableElement.innerHTML, `pedido_${service.name.replace(/\s+/g, '_')}`);
         }
     };
 
@@ -118,7 +118,7 @@ const PedidoDetalle: React.FC<{
                 <h3 className="text-xl font-bold text-gray-800">Pedido para {menu.pax} PAX</h3>
                 <div className="flex gap-2">
                     <button onClick={handleExport} className="px-4 py-1.5 bg-green-500 text-white font-bold text-sm rounded-md hover:bg-green-600">Exportar Excel</button>
-                    <button onClick={handlePrint} className="px-4 py-1.5 bg-blue-500 text-white font-bold text-sm rounded-md hover:bg-blue-600">Imprimir</button>
+                    <button onClick={handleDownloadPdf} className="px-4 py-1.5 bg-blue-500 text-white font-bold text-sm rounded-md hover:bg-blue-600">Descargar PDF</button>
                 </div>
              </div>
              <div id={`printable-pedido-${service.id}`}>

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Recipe, Product, RecipeIngredient, RecipeStep, Elaboration } from '../types';
 import { ALLERGENS, PRODUCT_UNITS, PRODUCT_CATEGORIES, RECIPE_CATEGORIES } from '../constants';
-import { PencilIcon, PlusIcon, TrashIcon, BackIcon, UploadIcon, EyeIcon, DownloadIcon, XIcon, CheckIcon, ClipboardIcon, CodeBracketIcon } from './icons';
-import { printContent } from './printUtils';
+import { PencilIcon, PlusIcon, TrashIcon, BackIcon, UploadIcon, EyeIcon, DownloadIcon, XIcon, CheckIcon, ClipboardIcon, CodeBracketIcon, SearchIcon, LinkIcon } from './icons';
+import { downloadAsPdf } from './printUtils';
 
 // --- HELPER FUNCTIONS ---
 const uuidv4 = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -21,50 +21,6 @@ const EMPTY_RECIPE: Omit<Recipe, 'id' | 'authorId' | 'createdAt' | 'updatedAt'> 
     elaborations: [JSON.parse(JSON.stringify(EMPTY_ELABORATION))],
     visibility: 'private',
 };
-
-const RECIPE_TEMPLATE_JSON = `{
-  "name": "Nombre de la Receta (ej. Solomillo al Oporto)",
-  "category": "Categoría de la receta (ej. Carnes, Postres, etc.)",
-  "servings": 10, "// Número de raciones que produce esta receta",
-  "description": "Breve descripción del plato, su origen o características principales.",
-  "serviceNotes": "Anotaciones para el momento del servicio, como el tipo de plato, sugerencias de emplatado, etc.",
-  "elaborations": [
-    {
-      "name": "Nombre de la primera elaboración (ej. Salsa Oporto)",
-      "ingredients": [
-        {
-          "name": "Nombre del producto (ej. Vino de Oporto)",
-          "quantity": 0.5,
-          "unit": "litro"
-        },
-        {
-          "name": "Cebolla",
-          "quantity": 0.2,
-          "unit": "kg"
-        }
-      ],
-      "steps": [
-        "Descripción del primer paso de esta elaboración.",
-        "Descripción del segundo paso."
-      ]
-    },
-    {
-      "name": "Nombre de la segunda elaboración (ej. Guarnición de patatas)",
-      "ingredients": [
-        {
-          "name": "Patata",
-          "quantity": 1.5,
-          "unit": "kg"
-        }
-      ],
-      "steps": [
-        "Paso 1 para la guarnición.",
-        "Paso 2 para la guarnición."
-      ]
-    }
-  ]
-}`;
-
 
 const KitchenIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 21v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21m0 0h4.5V3.545M12.75 21h7.5V10.75M2.25 21h1.5m18 0h-18M2.25 9l4.5-1.636M18.75 3l-1.5.545m0 6.205l3 1m-3-1l-3-1m3 1v5.25c0 .621-.504 1.125-1.125-1.125h-2.25c-.621 0-1.125-.504-1.125-1.125V10.5m0 0L12 9M12 9l-3 1m0 0l-4.5 1.636M12 9V3.545" /></svg>
@@ -132,7 +88,6 @@ const AddProductModal: React.FC<{
                              <div>
                                 <label className="block text-sm font-medium text-gray-700">Unidad</label>
                                 <select name="unit" value={formData.unit} onChange={handleInputChange} required className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm bg-white">
-                                    {/* FIX: Changed `u` to `unit` to correctly reference the map variable. */}
                                     {PRODUCT_UNITS.map(unit => <option key={unit} value={unit}>{unit}</option>)}
                                 </select>
                             </div>
@@ -317,7 +272,7 @@ const RecipeFormView: React.FC<{
         return { totalCost: cost, totalAllergens: Array.from(allergens) };
     }, [formData.elaborations, products]);
     
-    const handlePrintRecipe = () => {
+    const handleDownloadRecipe = () => {
         let html = `
             ${formData.imageUrl ? `<img src="${formData.imageUrl}" alt="${formData.name}" style="width: 100%; max-height: 300px; object-fit: cover; margin-bottom: 1.5rem; border-radius: 0.5rem;" />` : ''}
             <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #eee; padding-bottom: 1rem; margin-bottom: 1.5rem;">
@@ -367,7 +322,8 @@ const RecipeFormView: React.FC<{
             </div>`;
          }
 
-        printContent(`Ficha Técnica: ${formData.name}`, html);
+        const fileName = `ficha_tecnica_${formData.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}`;
+        downloadAsPdf(`Ficha Técnica: ${formData.name}`, html, fileName);
     };
 
     return (
@@ -510,8 +466,9 @@ const RecipeFormView: React.FC<{
                                     <span className="font-semibold text-gray-900">{(totalCost / formData.servings).toFixed(2)} €</span>
                                 </div>
                             </div>
-                             <button type="button" onClick={handlePrintRecipe} className="w-full mt-4 text-sm text-center py-2 bg-blue-100 text-blue-800 font-semibold rounded-md hover:bg-blue-200">
-                                Imprimir Ficha
+                             <button type="button" onClick={handleDownloadRecipe} className="w-full mt-4 text-sm text-center py-2 bg-blue-100 text-blue-800 font-semibold rounded-md hover:bg-blue-200 flex items-center justify-center gap-2">
+                                <DownloadIcon className="h-5 w-5"/>
+                                Descargar Ficha (PDF)
                             </button>
                         </div>
                         <div className="bg-white p-4 rounded-lg shadow-md">
@@ -639,6 +596,140 @@ Tu respuesta debe ser únicamente el código JSON, sin explicaciones adicionales
     );
 };
 
+// --- NEW RECONCILIATION MODAL ---
+interface UnrecognizedIngredient {
+  originalName: string;
+  quantity: number;
+  unit: string;
+  elaborationId: string;
+  elaborationName: string;
+}
+interface ReconciliationState {
+  unrecognized: UnrecognizedIngredient[];
+  partiallyMappedRecipe: Omit<Recipe, 'id' | 'authorId' | 'createdAt' | 'updatedAt'>;
+  resolutions: { [originalName: string]: string };
+}
+const IngredientReconciliationModal: React.FC<{
+    state: ReconciliationState;
+    setState: React.Dispatch<React.SetStateAction<ReconciliationState | null>>;
+    products: Product[];
+    onFinalize: (resolutions: { [originalName: string]: string }) => void;
+    onCancel: () => void;
+    onCreateNewProduct: (unrecognizedIngredient: UnrecognizedIngredient) => void;
+}> = ({ state, setState, products, onFinalize, onCancel, onCreateNewProduct }) => {
+    const [searches, setSearches] = useState<{ [key: string]: string }>({});
+
+    const handleSearchChange = (originalName: string, term: string) => {
+        setSearches(prev => ({ ...prev, [originalName]: term }));
+    };
+
+    const handleLinkProduct = (originalName: string, productId: string) => {
+        setState(prev => prev ? {
+            ...prev,
+            resolutions: { ...prev.resolutions, [originalName]: productId }
+        } : null);
+    };
+    
+    const handleUnlinkProduct = (originalName: string) => {
+         setState(prev => {
+            if (!prev) return null;
+            const newResolutions = { ...prev.resolutions };
+            delete newResolutions[originalName];
+            return { ...prev, resolutions: newResolutions };
+        });
+    };
+
+    const getSearchResults = (term: string) => {
+        if (!term) return [];
+        return products.filter(p => p.name.toLowerCase().includes(term.toLowerCase())).slice(0, 5);
+    };
+
+    const resolvedCount = Object.keys(state.resolutions).length;
+    const totalCount = state.unrecognized.length;
+    const isFinalizable = resolvedCount === totalCount;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl transform transition-all flex flex-col max-h-[90vh]">
+                <div className="p-5 border-b border-gray-200">
+                    <h2 className="text-xl font-bold text-gray-800">Conciliación de Ingredientes</h2>
+                    <p className="text-sm text-gray-600 mt-1">Se han encontrado {totalCount} ingredientes no reconocidos. Por favor, vincúlalos a un producto existente o crea uno nuevo.</p>
+                </div>
+                <div className="p-6 flex-1 overflow-y-auto space-y-4">
+                    {state.unrecognized.map(item => {
+                        const resolvedProductId = state.resolutions[item.originalName];
+                        if (resolvedProductId) {
+                            const linkedProduct = products.find(p => p.id === resolvedProductId);
+                            return (
+                                <div key={item.originalName} className="bg-green-50 p-3 rounded-md border-l-4 border-green-500 flex justify-between items-center">
+                                    <div>
+                                        <p className="font-bold text-gray-700">{item.originalName}</p>
+                                        <p className="text-sm text-green-700 font-semibold flex items-center gap-2">
+                                            <LinkIcon className="h-4 w-4" />
+                                            Vinculado a: "{linkedProduct?.name || '???'}"
+                                        </p>
+                                    </div>
+                                    <button onClick={() => handleUnlinkProduct(item.originalName)} className="text-sm font-semibold text-gray-600 hover:text-red-600">Desvincular</button>
+                                </div>
+                            );
+                        }
+
+                        const searchTerm = searches[item.originalName] || '';
+                        const searchResults = getSearchResults(searchTerm);
+
+                        return (
+                            <div key={item.originalName} className="bg-yellow-50 p-3 rounded-md border-l-4 border-yellow-400">
+                                <p className="font-bold text-gray-700">{item.originalName}</p>
+                                <p className="text-xs text-gray-500 mb-2">En elaboración: "{item.elaborationName}"</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                                    <div className="relative">
+                                        <label className="text-sm font-medium text-gray-600">Buscar producto existente</label>
+                                        <div className="relative">
+                                            <SearchIcon className="h-5 w-5 absolute top-1/2 left-2 -translate-y-1/2 text-gray-400" />
+                                            <input
+                                                type="text"
+                                                placeholder="Buscar en catálogo..."
+                                                value={searchTerm}
+                                                onChange={(e) => handleSearchChange(item.originalName, e.target.value)}
+                                                className="w-full p-2 pl-8 border rounded-md"
+                                            />
+                                        </div>
+                                        {searchTerm && (
+                                            <div className="absolute z-10 w-full bg-white border rounded-md mt-1 shadow-lg max-h-40 overflow-y-auto">
+                                                {searchResults.length > 0 ? searchResults.map(p => (
+                                                    <div key={p.id} onClick={() => handleLinkProduct(item.originalName, p.id)} className="p-2 text-sm hover:bg-gray-100 cursor-pointer flex justify-between items-center">
+                                                        <span>{p.name}</span>
+                                                        <button className="text-teal-600 hover:text-teal-800"><LinkIcon className="h-5 w-5"/></button>
+                                                    </div>
+                                                )) : <p className="p-2 text-sm text-gray-500 italic">No se encontraron productos.</p>}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="text-center md:text-left">
+                                         <label className="text-sm font-medium text-gray-600">¿No lo encuentras?</label>
+                                        <button onClick={() => onCreateNewProduct(item)} className="w-full mt-1 flex items-center justify-center gap-2 p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 font-semibold text-sm">
+                                            <PlusIcon className="h-5 w-5"/> Crear Nuevo Producto
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+                <div className="bg-gray-50 p-4 flex justify-between items-center">
+                    <p className="text-sm font-semibold text-gray-700">{resolvedCount} de {totalCount} ingredientes resueltos.</p>
+                    <div className="flex gap-4">
+                        <button onClick={onCancel} className="px-6 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400">Cancelar</button>
+                        <button onClick={() => onFinalize(state.resolutions)} disabled={!isFinalizable} className="px-6 py-2 bg-teal-500 text-white font-bold rounded-md hover:bg-teal-600 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                            Finalizar Importación
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 // --- MAIN VIEW COMPONENT ---
 const MiRecetarioView: React.FC = () => {
@@ -662,11 +753,15 @@ const MiRecetarioView: React.FC = () => {
         }
     });
 
-    const [view, setView] = useState<'list' | 'form' | 'detail'>('list');
+    const [view, setView] = useState<'list' | 'form'>('list');
     const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
     const importInputRef = useRef<HTMLInputElement>(null);
+
+    const [reconciliationState, setReconciliationState] = useState<ReconciliationState | null>(null);
+    const [isAddingProductFromModal, setIsAddingProductFromModal] = useState<UnrecognizedIngredient | null>(null);
+
 
     const allRecipeCategories = useMemo(() => {
         const categories = new Set(RECIPE_CATEGORIES);
@@ -734,51 +829,102 @@ const MiRecetarioView: React.FC = () => {
         reader.onload = (e) => {
             try {
                 const imported = JSON.parse(e.target?.result as string);
-                
-                const missingIngredients: string[] = [];
-                const mappedElaborations: Elaboration[] = (imported.elaborations || []).map((elab: any) => {
-                    const mappedIngredients: RecipeIngredient[] = (elab.ingredients || []).map((ing: any) => {
-                        const product = products.find(p => ing.name?.toLowerCase().includes(p.name.toLowerCase()));
+
+                const unrecognizedIngredients: UnrecognizedIngredient[] = [];
+                const partiallyMappedElaborations: Elaboration[] = (imported.elaborations || []).map((elab: any) => {
+                    const elabId = uuidv4();
+                    const mappedIngredients: RecipeIngredient[] = [];
+
+                    (elab.ingredients || []).forEach((ing: any) => {
+                        const productName = ing.name?.trim().toLowerCase();
+                        if (!productName) return;
+
+                        const product = products.find(p => p.name.toLowerCase() === productName);
                         if (product) {
-                            return { productId: product.id, quantity: ing.quantity || 0, unit: ing.unit || product.unit };
+                            mappedIngredients.push({ productId: product.id, quantity: ing.quantity || 0, unit: ing.unit || product.unit });
                         } else {
-                            missingIngredients.push(ing.name || 'Desconocido');
-                            return null;
+                            unrecognizedIngredients.push({
+                                originalName: ing.name.trim(),
+                                quantity: ing.quantity || 0,
+                                unit: ing.unit || 'unidad',
+                                elaborationId: elabId,
+                                elaborationName: elab.name || 'Elaboración sin nombre'
+                            });
                         }
-                    }).filter((ing: RecipeIngredient | null): ing is RecipeIngredient => ing !== null);
-                    
+                    });
+
                     return {
-                        id: uuidv4(),
+                        id: elabId,
                         name: elab.name || 'Elaboración sin nombre',
                         ingredients: mappedIngredients,
                         steps: (elab.steps || []).map((step: string) => ({ id: uuidv4(), description: step }))
                     };
                 });
-
-                const newRecipeData: Omit<Recipe, 'id' | 'authorId' | 'createdAt' | 'updatedAt'> = {
+                
+                const partiallyMappedRecipe: Omit<Recipe, 'id' | 'authorId' | 'createdAt' | 'updatedAt'> = {
                     ...EMPTY_RECIPE,
                     name: imported.name || 'Receta Sin Nombre',
                     category: imported.category || RECIPE_CATEGORIES[0],
                     servings: imported.servings || 1,
                     description: imported.description || '',
                     serviceNotes: imported.serviceNotes || '',
-                    elaborations: mappedElaborations.length > 0 ? mappedElaborations : [JSON.parse(JSON.stringify(EMPTY_ELABORATION))]
+                    elaborations: partiallyMappedElaborations.length > 0 ? partiallyMappedElaborations : [JSON.parse(JSON.stringify(EMPTY_ELABORATION))]
                 };
                 
-                if (missingIngredients.length > 0) {
-                    alert(`Importación parcial: Los siguientes productos no se encontraron en tu catálogo y no fueron añadidos:\n\n- ${missingIngredients.join('\n- ')}\n\nPor favor, añádelos manualmente.`);
+                if (unrecognizedIngredients.length > 0) {
+                     setReconciliationState({
+                        unrecognized: unrecognizedIngredients,
+                        partiallyMappedRecipe: partiallyMappedRecipe,
+                        resolutions: {}
+                    });
+                } else {
+                    setSelectedRecipe(partiallyMappedRecipe as Recipe);
+                    setView('form');
                 }
-                
-                setSelectedRecipe(newRecipeData as Recipe); // Cast to Recipe for the form, ID will be generated on save.
-                setView('form');
 
             } catch (err) {
                 alert(`Error al procesar el archivo JSON: ${(err as Error).message}`);
             } finally {
-                if(importInputRef.current) importInputRef.current.value = "";
+                if (importInputRef.current) importInputRef.current.value = "";
             }
         };
         reader.readAsText(file);
+    };
+    
+    const handleFinalizeReconciliation = (finalResolutions: { [originalName: string]: string }) => {
+        if (!reconciliationState) return;
+
+        const { partiallyMappedRecipe, unrecognized } = reconciliationState;
+        
+        const newIngredientsByElab = new Map<string, RecipeIngredient[]>();
+
+        unrecognized.forEach(unrec => {
+            const productId = finalResolutions[unrec.originalName];
+            if (productId) {
+                if (!newIngredientsByElab.has(unrec.elaborationId)) {
+                    newIngredientsByElab.set(unrec.elaborationId, []);
+                }
+                newIngredientsByElab.get(unrec.elaborationId)!.push({
+                    productId: productId,
+                    quantity: unrec.quantity,
+                    unit: unrec.unit
+                });
+            }
+        });
+
+        const finalElaborations = partiallyMappedRecipe.elaborations.map(elab => {
+            const newIngredients = newIngredientsByElab.get(elab.id) || [];
+            return {
+                ...elab,
+                ingredients: [...elab.ingredients, ...newIngredients]
+            };
+        });
+
+        const finalRecipeData = { ...partiallyMappedRecipe, elaborations: finalElaborations };
+
+        setSelectedRecipe(finalRecipeData as Recipe);
+        setView('form');
+        setReconciliationState(null);
     };
 
     const filteredRecipes = useMemo(() => {
@@ -810,6 +956,36 @@ const MiRecetarioView: React.FC = () => {
     return (
         <>
             {isPromptModalOpen && <TemplatePromptModal onClose={() => setIsPromptModalOpen(false)} />}
+            {reconciliationState && (
+                <IngredientReconciliationModal 
+                    state={reconciliationState}
+                    setState={setReconciliationState}
+                    products={products}
+                    onFinalize={handleFinalizeReconciliation}
+                    onCancel={() => setReconciliationState(null)}
+                    onCreateNewProduct={(unrec) => setIsAddingProductFromModal(unrec)}
+                />
+            )}
+            {isAddingProductFromModal && (
+                 <AddProductModal 
+                    initialName={isAddingProductFromModal.originalName}
+                    onSave={(newProduct) => {
+                        handleAddNewProduct(newProduct);
+                        setReconciliationState(prev => {
+                            if (!prev) return null;
+                            return {
+                                ...prev,
+                                resolutions: {
+                                    ...prev.resolutions,
+                                    [isAddingProductFromModal.originalName]: newProduct.id,
+                                }
+                            }
+                        });
+                        setIsAddingProductFromModal(null);
+                    }}
+                    onCancel={() => setIsAddingProductFromModal(null)}
+                />
+            )}
             <div className="space-y-8">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>

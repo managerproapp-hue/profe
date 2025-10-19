@@ -1,5 +1,9 @@
 import { TeacherData, InstituteData } from './types';
 
+// Declare the libraries loaded from CDN
+declare var html2canvas: any;
+declare var jspdf: any;
+
 // Helper to fetch data safely from localStorage
 const getStoredData = <T,>(key: string, defaultValue: T): T => {
     try {
@@ -11,117 +15,109 @@ const getStoredData = <T,>(key: string, defaultValue: T): T => {
 };
 
 /**
- * Generates and prints an HTML content string with a standardized header and footer.
+ * Generates and downloads a PDF file from an HTML content string.
  * @param title The title of the document.
- * @param contentHtml The HTML string of the content to be printed.
+ * @param contentHtml The HTML string of the content to be included in the PDF.
+ * @param fileName The name of the file to be downloaded (without extension).
  */
-export const printContent = (title: string, contentHtml: string) => {
-    const teacherData = getStoredData<TeacherData>('teacher-app-data', { name: 'Profesor', email: '' });
-    const instituteData = getStoredData<InstituteData>('institute-app-data', { name: 'Instituto', address: '', cif: '' });
-
-    const printWindow = window.open('', '_blank', 'height=800,width=1000');
-    if (!printWindow) {
-        alert("No se pudo abrir la ventana de impresión. Por favor, deshabilita el bloqueador de pop-ups.");
+export const downloadAsPdf = (title: string, contentHtml: string, fileName: string) => {
+    // Check if libraries are loaded
+    if (typeof html2canvas === 'undefined' || typeof jspdf === 'undefined') {
+        alert("Las librerías para generar PDF no están disponibles. Por favor, recargue la página.");
         return;
     }
 
+    const { jsPDF } = jspdf;
+
+    // Create a temporary container for rendering
+    const container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.left = '-9999px'; // Position off-screen
+    container.style.width = '210mm'; // A4 width
+    container.style.padding = '15mm';
+    container.style.boxSizing = 'border-box';
+    container.style.backgroundColor = 'white';
+    
+    document.body.appendChild(container);
+
+    const teacherData = getStoredData<TeacherData>('teacher-app-data', { name: 'Profesor', email: '' });
+    const instituteData = getStoredData<InstituteData>('institute-app-data', { name: 'Instituto', address: '', cif: '' });
+
     const headerHtml = `
-        <div id="print-header" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 2px solid #e5e7eb; margin-bottom: 1.5rem;">
+        <div id="pdf-header" style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; border-bottom: 2px solid #e5e7eb; margin-bottom: 1.5rem;">
             <div style="display: flex; align-items: center; gap: 1rem;">
                 ${instituteData.logo ? `<img src="${instituteData.logo}" alt="Logo Instituto" style="height: 50px; max-width: 150px; object-fit: contain;">` : ''}
                 <div>
-                    <h2 style="font-weight: bold; font-size: 1.125rem; color: #1f2937;">${instituteData.name}</h2>
+                    <h2 style="font-weight: bold; font-size: 1.125rem; color: #1f2937; margin:0;">${instituteData.name}</h2>
                 </div>
             </div>
             <div style="text-align: right; display: flex; align-items: center; gap: 1rem;">
                  <div>
-                    <h3 style="font-weight: bold; font-size: 1.125rem; color: #1f2937;">${teacherData.name}</h3>
+                    <h3 style="font-weight: bold; font-size: 1.125rem; color: #1f2937; margin:0;">${teacherData.name}</h3>
                 </div>
                 ${teacherData.logo ? `<img src="${teacherData.logo}" alt="Logo Profesor" style="height: 50px; max-width: 150px; object-fit: contain;">` : ''}
             </div>
         </div>
         <h1 style="font-size: 1.875rem; font-weight: bold; text-align: center; margin-bottom: 2rem; color: #11182c;">${title}</h1>
     `;
-    
-    const footerHtml = `
-        <div id="print-footer" style="font-size: 0.75rem; color: #6b7280; text-align: center;">
-            <p>${teacherData.name}</p>
-        </div>
-        <div id="page-number"></div>
-    `;
 
     const styles = `
         @import url('https://rsms.me/inter/inter.css');
-        body {
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            padding: 1.5rem;
-            -webkit-print-color-adjust: exact;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.8rem;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f9fafb;
-            font-weight: 600;
-        }
-        tr:nth-child(even) {
-            background-color: #f9fafb;
-        }
-        @page {
-            size: A4;
-            margin: 1.5cm;
-            @bottom-center {
-                content: element(footer);
-            }
-        }
-        #print-header, #print-footer {
-            width: 100%;
-            box-sizing: border-box;
-        }
-        #print-footer {
-            position: running(footer);
-        }
-        #page-number::after {
-            content: "Página " counter(page);
-        }
-        .print-container {
-            counter-reset: page 1;
-        }
-        .break-inside-avoid {
-            break-inside: avoid;
-        }
+        body { font-family: 'Inter', sans-serif; color: #374151; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f9fafb; font-weight: 600; }
+        tr:nth-child(even) { background-color: #f9fafb; }
+        .break-inside-avoid { break-inside: avoid; page-break-inside: avoid; }
     `;
 
-    printWindow.document.write(`
-        <html>
-            <head>
-                <title>${title}</title>
-                <script src="https://cdn.tailwindcss.com"></script>
-                <style>${styles}</style>
-            </head>
-            <body class="print-container">
-                ${headerHtml}
-                <div id="print-content">${contentHtml}</div>
-                ${footerHtml}
-                <script>
-                    setTimeout(() => {
-                        window.print();
-                        window.close();
-                    }, 250);
-                </script>
-            </body>
-        </html>
-    `);
-    printWindow.document.close();
+    container.innerHTML = `
+        <style>${styles}</style>
+        ${headerHtml}
+        <div id="pdf-content">${contentHtml}</div>
+    `;
+
+    html2canvas(container, {
+        scale: 2, // Higher scale for better quality
+        useCORS: true,
+        allowTaint: true
+    }).then((canvas: { toDataURL: (arg0: string) => any; width: number; height: number; }) => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+        });
+
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const ratio = canvasHeight / canvasWidth;
+        const imgHeight = pdfWidth * ratio;
+        
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+        heightLeft -= pdfHeight;
+
+        while (heightLeft > 0) {
+            position = -heightLeft;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+            heightLeft -= pdfHeight;
+        }
+
+        pdf.save(`${fileName}.pdf`);
+        document.body.removeChild(container);
+    }).catch((err: any) => {
+        console.error("Error generating PDF:", err);
+        alert("Hubo un error al generar el PDF.");
+        document.body.removeChild(container);
+    });
 };
+
 
 /**
  * Exports an array of data to an Excel file.

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Student } from '../types';
 import { UsersIcon, GroupIcon, ServiceIcon, CalendarIcon, TrashIcon, CloseIcon, CogIcon, PlusIcon, PencilIcon, CheckIcon, XIcon, DownloadIcon } from './icons';
-import { printContent, exportToExcel } from './printUtils';
+import { downloadAsPdf, exportToExcel } from './printUtils';
 
 
 // --- HELPER FUNCTION ---
@@ -397,7 +397,7 @@ const PlanningTab: React.FC<{
         }
     };
 
-    const handlePrintPlanning = (service: Service) => {
+    const handleDownloadPdfPlanning = (service: Service) => {
         const serviceAssignments = planningAssignments[service.id] || {};
         let html = '';
 
@@ -436,7 +436,7 @@ const PlanningTab: React.FC<{
             `;
         });
         
-        printContent(`Planning: ${service.name} (${new Date(service.date).toLocaleDateString()})`, html);
+        downloadAsPdf(`Planning: ${service.name} (${new Date(service.date).toLocaleDateString()})`, html, `planning_${service.name.replace(/\s+/g, '_')}`);
         setOpenExportMenu(null);
     };
 
@@ -495,7 +495,7 @@ const PlanningTab: React.FC<{
                                     </button>
                                     {openExportMenu === service.id && (
                                         <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border">
-                                            <button onClick={() => handlePrintPlanning(service)} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Imprimir Planning</button>
+                                            <button onClick={() => handleDownloadPdfPlanning(service)} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Descargar PDF</button>
                                             <button onClick={() => handleExportExcelPlanning(service)} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Exportar a Excel</button>
                                         </div>
                                     )}
@@ -612,7 +612,7 @@ const PartidasYGruposTab: React.FC<{
     setGroupColors(prev => ({ ...prev, [newGroupName]: newColor }));
   };
 
-  const handlePrintGroups = () => {
+  const handleDownloadPdfGroups = () => {
     let html = '';
     practicaGroups.forEach(group => {
         const members = students.filter(s => studentGroupAssignments[s.nre] === group);
@@ -630,7 +630,7 @@ const PartidasYGruposTab: React.FC<{
             </div>
         `;
     });
-    printContent('Distribución de Grupos de Prácticas', html);
+    downloadAsPdf('Distribución de Grupos de Prácticas', html, 'distribucion_grupos');
     setIsExportMenuOpen(false);
   };
   
@@ -674,7 +674,7 @@ const PartidasYGruposTab: React.FC<{
                 </button>
                 {isExportMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border">
-                        <button onClick={handlePrintGroups} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Imprimir Grupos</button>
+                        <button onClick={handleDownloadPdfGroups} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Descargar PDF</button>
                         <button onClick={handleExportExcelGroups} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Exportar a Excel</button>
                     </div>
                 )}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Student, Grade, Annotation, Interview } from '../types';
 import { CloseIcon, PencilIcon, PlusIcon, DownloadIcon } from './icons';
-import { printContent } from './printUtils';
+import { downloadAsPdf } from './printUtils';
 
 // Re-using helper functions from the old view
 const getGradeColor = (score: number) => {
@@ -158,7 +158,8 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({ student, onClos
         </div>
     `;
 
-    printContent(`Ficha Completa - ${studentName}`, contentHtml);
+    const fileName = `ficha_${student.apellido1}_${student.nombre}`.toLowerCase().replace(/\s+/g, '_');
+    downloadAsPdf(`Ficha Completa - ${studentName}`, contentHtml, fileName);
   };
 
   return (
@@ -173,7 +174,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({ student, onClos
               className="flex items-center bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
             >
               <DownloadIcon className="h-5 w-5 mr-2" />
-              Descargar Ficha
+              Descargar Ficha (PDF)
             </button>
             <button
               onClick={() => onEdit(student)}

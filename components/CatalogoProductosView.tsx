@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Product } from '../types';
 import { PRODUCT_CATEGORIES, PRODUCT_UNITS, ALLERGENS, ALLERGEN_MAP, normalizeCategory } from '../constants';
 import { PlusIcon, PencilIcon, TrashIcon, UploadIcon, DownloadIcon, CheckIcon, XIcon } from './icons';
-import { printContent, exportToExcel } from './printUtils';
+import { downloadAsPdf, exportToExcel } from './printUtils';
 
 
 // Simple UUID generator
@@ -189,7 +189,7 @@ const CatalogoProductosView: React.FC = () => {
             .sort((a, b) => a.name.localeCompare(b.name));
     }, [products, searchTerm]);
     
-    const handlePrintCatalog = () => {
+    const handleDownloadPdfCatalog = () => {
         const tableHtml = `
             <table>
                 <thead>
@@ -214,7 +214,7 @@ const CatalogoProductosView: React.FC = () => {
                 </tbody>
             </table>
         `;
-        printContent('Catálogo de Productos', tableHtml);
+        downloadAsPdf('Catálogo de Productos', tableHtml, 'catalogo_productos');
         setIsExportMenuOpen(false);
     };
 
@@ -309,7 +309,7 @@ const CatalogoProductosView: React.FC = () => {
                             </button>
                             {isExportMenuOpen && (
                                 <div className="absolute right-0 mt-2 w-full bg-white rounded-md shadow-lg z-10 border">
-                                    <button onClick={handlePrintCatalog} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Imprimir Catálogo</button>
+                                    <button onClick={handleDownloadPdfCatalog} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Descargar PDF</button>
                                     <button onClick={handleExportExcel} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Exportar a Excel</button>
                                     <button onClick={handleExportJson} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Exportar a JSON</button>
                                 </div>
