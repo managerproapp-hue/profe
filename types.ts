@@ -104,3 +104,32 @@ export interface Recipe {
   createdAt: string;
   updatedAt?: string;
 }
+
+// --- GESTION PRÁCTICA TYPES ---
+export interface Service {
+  id: string;
+  name: string;
+  date: string;
+  trimestre: number;
+  groupAssignments: {
+    comedor: string[];
+    takeaway: string[];
+  };
+  menu?: string;
+}
+
+// --- CREACIÓN DE MENÚS TYPES ---
+
+export interface MenuApartado {
+  [apartadoName: string]: string[]; // Array of recipe IDs
+}
+
+export interface Menu {
+  pax: number;
+  comedor: MenuApartado;
+  takeaway: MenuApartado;
+}
+
+export interface MenusState {
+  [serviceId: string]: Menu;
+}

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { CocinaSubView } from '../types';
 import CatalogoProductosView from './CatalogoProductosView';
 import MiRecetarioView from './MiRecetarioView';
+import CreacionMenusView from './CreacionMenusView';
+import PedidosView from './PedidosView';
 
 const CocinaView: React.FC = () => {
   const [activeSubView, setActiveSubView] = useState<CocinaSubView>('Productos');
@@ -12,20 +14,16 @@ const CocinaView: React.FC = () => {
         return <CatalogoProductosView />;
       case 'Mi Recetario':
         return <MiRecetarioView />;
-      case 'Pedidos':
       case 'Creación de Menús':
-        return (
-          <div className="bg-white p-8 rounded-lg shadow-md text-center">
-            <h2 className="text-2xl font-bold text-gray-800">{activeSubView}</h2>
-            <p className="mt-4 text-gray-600">Esta sección está en construcción y estará disponible próximamente.</p>
-          </div>
-        );
+        return <CreacionMenusView />;
+      case 'Pedidos':
+        return <PedidosView />;
       default:
         return null;
     }
   };
 
-  const subNavItems: CocinaSubView[] = ['Productos', 'Mi Recetario', 'Pedidos', 'Creación de Menús'];
+  const subNavItems: CocinaSubView[] = ['Productos', 'Mi Recetario', 'Creación de Menús', 'Pedidos'];
 
   return (
     <div className="p-8">
