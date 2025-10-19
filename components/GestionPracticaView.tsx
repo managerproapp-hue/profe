@@ -399,72 +399,80 @@ const PlanningTab: React.FC<{
 
     const handleDownloadPdfPlanning = (service: Service) => {
         const serviceAssignments = planningAssignments[service.id] || {};
-        let html = '';
-    
-        const leaders = LEADER_ROLES.map(role => {
+        
+        const findLeaderName = (role: string) => {
             const studentNre = Object.keys(serviceAssignments).find(nre => serviceAssignments[nre] === role);
             const student = students.find(s => s.nre === studentNre);
-            const studentName = student ? `${student.nombre} ${student.apellido1} ${student.apellido2 || ''}`.trim() : 'Sin asignar';
-            return { role, studentName };
-        });
-    
-        // Leadership section
-        html += `
-            <div style="margin-bottom: 1.5rem; break-inside: avoid;">
-                <h3 style="font-size: 1.1rem; font-weight: bold;">Roles de Liderazgo</h3>
-                <table style="margin-top: 0.5rem; font-size: 0.8rem; width: 100%;">
-                    <thead>
-                        <tr>
-                            <th style="padding: 4px; text-align: left; border-bottom: 1px solid #ccc; width: 40%;">Rol</th>
-                            <th style="padding: 4px; text-align: left; border-bottom: 1px solid #ccc;">Alumno</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${leaders.map(l => `
-                            <tr style="border-top: 1px solid #eee;">
-                                <td style="padding: 4px;">${l.role}</td>
-                                <td style="padding: 4px;">${l.studentName}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
+            return student ? `${student.nombre} ${student.apellido1}` : 'Sin asignar';
+        };
+
+        const jefeCocina = findLeaderName("Jefe de Cocina");
+        const segundoJefeCocina = findLeaderName("2º Jefe de Cocina");
+        const segundoJefeTakeaway = findLeaderName("2º Jefe de Takeaway");
+
+        const generateGroupsHtml = (groupIds: string[]) => {
+            if (groupIds.length === 0) return '<p style="font-size: 0.8rem; color: #6b7280; font-style: italic;">No hay partidas asignadas.</p>';
+            
+            const groupHtml = groupIds.map(groupName => {
+                const studentsInGroup = students.filter(s => studentGroupAssignments[s.nre] === groupName);
+                return `
+                    <div style="border: 1px solid #e5e7eb; border-radius: 0.375rem; padding: 0.5rem; break-inside: avoid;">
+                        <h4 style="font-size: 0.8rem; font-weight: bold; margin: 0 0 0.5rem 0;">${groupName}</h4>
+                        <table style="font-size: 0.65rem; width: 100%;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid #ccc;">
+                                    <th style="padding: 2px; text-align: left; width: 60%;">Alumno</th>
+                                    <th style="padding: 2px; text-align: left;">Rol</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${studentsInGroup.map(student => {
+                                    const role = serviceAssignments[student.nre] || 'Sin asignar';
+                                    const fullName = `${student.nombre} ${student.apellido1}`;
+                                    return `
+                                        <tr style="border-top: 1px solid #eee;">
+                                            <td style="padding: 2px;">${fullName}</td>
+                                            <td style="padding: 2px;">${role}</td>
+                                        </tr>`;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }).join('');
+
+            return `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.75rem;">${groupHtml}</div>`;
+        };
+        
+        const comedorGroupsHtml = generateGroupsHtml(service.groupAssignments.comedor);
+        const takeawayGroupsHtml = generateGroupsHtml(service.groupAssignments.takeaway);
+        
+        const html = `
+            <div style="margin-bottom: 1.5rem;">
+                <h3 style="font-size: 1.25rem; font-weight: bold; color: #166534; border-bottom: 2px solid #22c55e; padding-bottom: 0.25rem; margin-bottom: 0.75rem;">SERVICIO DE COMEDOR</h3>
+                <div style="font-size: 0.9rem; margin-bottom: 1rem;">
+                    <p><strong style="width: 150px; display: inline-block;">Jefe de Cocina:</strong> ${jefeCocina}</p>
+                    <p><strong style="width: 150px; display: inline-block;">2º Jefe de Cocina:</strong> ${segundoJefeCocina}</p>
+                </div>
+                ${comedorGroupsHtml}
+            </div>
+            
+            <div style="break-before: auto;">
+                <h3 style="font-size: 1.25rem; font-weight: bold; color: #1d4ed8; border-bottom: 2px solid #3b82f6; padding-bottom: 0.25rem; margin-bottom: 0.75rem;">SERVICIO DE TAKEAWAY</h3>
+                <div style="font-size: 0.9rem; margin-bottom: 1rem;">
+                    <p><strong style="width: 150px; display: inline-block;">2º Jefe de Takeaway:</strong> ${segundoJefeTakeaway}</p>
+                </div>
+                ${takeawayGroupsHtml}
             </div>
         `;
-    
-        const serviceGroups = [...new Set([...service.groupAssignments.comedor, ...service.groupAssignments.takeaway])];
         
-        // Groups section
-        const groupHtml = serviceGroups.map(groupName => {
-            const studentsInGroup = students.filter(s => studentGroupAssignments[s.nre] === groupName);
-            return `
-                <div style="break-inside: avoid; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 0.75rem; page-break-inside: avoid;">
-                    <h3 style="font-size: 1rem; font-weight: bold; margin-bottom: 0.5rem;">Partida: ${groupName}</h3>
-                    <table style="margin-top: 0.5rem; font-size: 0.75rem; width: 100%;">
-                        <thead>
-                            <tr>
-                                <th style="padding: 4px; text-align: left; border-bottom: 1px solid #ccc;">Alumno</th>
-                                <th style="padding: 4px; text-align: left; border-bottom: 1px solid #ccc;">Rol Asignado</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        ${studentsInGroup.map(student => {
-                            const role = serviceAssignments[student.nre] || 'Sin asignar';
-                            const fullName = `${student.nombre} ${student.apellido1} ${student.apellido2 || ''}`.trim();
-                            return `
-                                <tr style="border-top: 1px solid #eee;">
-                                    <td style="padding: 4px;">${fullName}</td>
-                                    <td style="padding: 4px;">${role}</td>
-                                </tr>`;
-                        }).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
-        }).join('');
-    
-        html += `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">${groupHtml}</div>`;
+        downloadAsPdf(
+            `Planning: ${service.name} (${new Date(service.date).toLocaleDateString()})`, 
+            html, 
+            `planning_${service.name.replace(/\s+/g, '_')}`,
+            { orientation: 'landscape', minimalHeader: true }
+        );
         
-        downloadAsPdf(`Planning: ${service.name} (${new Date(service.date).toLocaleDateString()})`, html, `planning_${service.name.replace(/\s+/g, '_')}`);
         setOpenExportMenu(null);
     };
 
@@ -661,7 +669,7 @@ const PartidasYGruposTab: React.FC<{
 
     const html = `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">${groupHtml}</div>`;
     
-    downloadAsPdf('Distribución de Grupos de Prácticas', html, 'distribucion_grupos');
+    downloadAsPdf('Distribución de Grupos de Prácticas', html, 'distribucion_grupos', { minimalHeader: true });
     setIsExportMenuOpen(false);
   };
   
