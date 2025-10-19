@@ -19,6 +19,22 @@ interface PdfOptions {
   minimalHeader?: boolean;
 }
 
+// Helper to get image dimensions from base64 string to preserve aspect ratio
+const getImageDimensions = (base64: string): Promise<{ width: number; height: number }> => {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+            resolve({ width: img.width, height: img.height });
+        };
+        img.onerror = (err) => {
+            console.error("Failed to load image from base64 for dimension calculation.");
+            reject(err);
+        };
+        img.src = base64;
+    });
+};
+
+
 /**
  * Generates and downloads a PDF file from an HTML content string, with headers and footers on each page.
  * @param title The title of the document.
@@ -62,7 +78,7 @@ export const downloadAsPdf = (title: string, contentHtml: string, fileName: stri
         scale: 2, // Higher resolution
         useCORS: true,
         allowTaint: true
-    }).then((canvas: any) => {
+    }).then(async (canvas: any) => {
         document.body.removeChild(contentContainer);
 
         const teacherData = getStoredData<TeacherData>('teacher-app-data', { name: 'Profesor', email: '' });
@@ -75,15 +91,15 @@ export const downloadAsPdf = (title: string, contentHtml: string, fileName: stri
         const margin = 10; // 1cm margin
 
         // --- 2. CALCULATE PAGE LAYOUT ---
-        const headerHeight = minimalHeader ? 20 : 30;
-        const footerHeight = 10; // 1cm empty footer
-        const contentHeightPerPage = pdfHeight - headerHeight - footerHeight;
+        const headerHeight = 20; // Standard compact header
+        const footerHeight = 15;
+        const contentAreaHeight = pdfHeight - headerHeight - footerHeight;
 
         const imgData = canvas.toDataURL('image/png');
         const contentImgWidth = pdfWidth - margin * 2;
         const contentImgHeight = (contentImgWidth / canvas.width) * canvas.height;
         
-        const totalPages = Math.ceil(contentImgHeight / contentHeightPerPage);
+        const totalPages = Math.ceil(contentImgHeight / contentAreaHeight);
 
         // --- 3. LOOP THROUGH PAGES AND BUILD PDF ---
         let yOffset = 0;
@@ -93,52 +109,52 @@ export const downloadAsPdf = (title: string, contentHtml: string, fileName: stri
             }
 
             // --- A. ADD CONTENT SLICE ---
-            // We add the full image but use a negative Y offset to "scroll" through it on each page.
             pdf.addImage(imgData, 'PNG', margin, -yOffset + headerHeight, contentImgWidth, contentImgHeight, undefined, 'FAST');
 
             // --- B. ADD HEADER ON TOP ---
-            // Draw a white box to ensure the header area is clean
             pdf.setFillColor(255, 255, 255);
             pdf.rect(0, 0, pdfWidth, headerHeight, 'F'); 
 
-            const pageNumText = `Página ${i} de ${totalPages}`;
-            const headerStartY = 8;
-            const logoHeight = minimalHeader ? 8 : 12;
-            const logoWidth = 30;
+            const headerStartY = 7;
+            const logoHeight = 10;
+            let instituteLogoRenderWidth = 0;
+            let teacherLogoRenderWidth = 0;
 
             if (instituteData.logo) {
-                try { pdf.addImage(instituteData.logo, 'PNG', margin, headerStartY, logoWidth, logoHeight, undefined, 'FAST'); } catch(e) { console.error("Error adding institute logo", e); }
+                try { 
+                    const dims = await getImageDimensions(instituteData.logo);
+                    instituteLogoRenderWidth = (dims.width / dims.height) * logoHeight;
+                    pdf.addImage(instituteData.logo, 'PNG', margin, headerStartY, instituteLogoRenderWidth, logoHeight, undefined, 'FAST');
+                } catch(e) { console.error("Error adding institute logo", e); }
             }
             if (teacherData.logo) {
-                 try { pdf.addImage(teacherData.logo, 'PNG', pdfWidth - margin - logoWidth, headerStartY, logoWidth, logoHeight, undefined, 'FAST'); } catch(e) { console.error("Error adding teacher logo", e); }
+                 try { 
+                    const dims = await getImageDimensions(teacherData.logo);
+                    teacherLogoRenderWidth = (dims.width / dims.height) * logoHeight;
+                    pdf.addImage(teacherData.logo, 'PNG', pdfWidth - margin - teacherLogoRenderWidth, headerStartY, teacherLogoRenderWidth, logoHeight, undefined, 'FAST'); 
+                } catch(e) { console.error("Error adding teacher logo", e); }
             }
 
-            // Institute & Teacher Names
-            pdf.setFontSize(minimalHeader ? 8 : 10);
+            pdf.setFontSize(8);
             pdf.setTextColor(80, 80, 80);
-            pdf.text(instituteData.name, margin + (instituteData.logo ? logoWidth + 2 : 0), headerStartY + logoHeight / 2 + 1);
-            pdf.text(teacherData.name, pdfWidth - margin - (teacherData.logo ? logoWidth + 2 : 0), headerStartY + logoHeight / 2 + 1, { align: 'right' });
+            pdf.text(instituteData.name, margin + instituteLogoRenderWidth + 2, headerStartY + logoHeight / 2 + 1);
+            pdf.text(teacherData.name, pdfWidth - margin - teacherLogoRenderWidth - 2, headerStartY + logoHeight / 2 + 1, { align: 'right' });
             
-            // Page Number
+            pdf.setFontSize(14);
+            pdf.setTextColor(20, 20, 20);
+            pdf.text(title, pdfWidth / 2, headerStartY + 6, { align: 'center' });
+
+            // Header line (provides space between header and content)
+            pdf.setDrawColor(229, 231, 235);
+            pdf.line(margin, headerHeight - 4, pdfWidth - margin, headerHeight - 4);
+
+            // --- C. ADD FOOTER ---
+            const pageNumText = `Página ${i} de ${totalPages}`;
             pdf.setFontSize(8);
             pdf.setTextColor(150, 150, 150);
-            pdf.text(pageNumText, pdfWidth / 2, headerStartY + logoHeight / 2, { align: 'center' });
-
-            // Document Title
-            pdf.setFontSize(minimalHeader ? 12 : 16);
-            pdf.setTextColor(20, 20, 20);
-            pdf.text(title, pdfWidth / 2, headerHeight - 6, { align: 'center' });
-
-            // Header line
-            pdf.setDrawColor(229, 231, 235); // gray-200
-            pdf.line(margin, headerHeight - 3, pdfWidth - margin, headerHeight - 3);
-
-            // --- C. ADD FOOTER SPACE ---
-            // Draw a white box for a clean empty footer
-            pdf.setFillColor(255, 255, 255);
-            pdf.rect(0, pdfHeight - footerHeight, pdfWidth, footerHeight, 'F'); 
-
-            yOffset += contentHeightPerPage;
+            pdf.text(pageNumText, pdfWidth - margin, pdfHeight - margin + 3, { align: 'right' });
+            
+            yOffset += contentAreaHeight;
         }
 
         pdf.save(`${fileName}.pdf`);
