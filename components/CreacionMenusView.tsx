@@ -20,10 +20,9 @@ const DEFAULT_TAKEAWAY_SECTIONS = ["Bocadillos", "Raciones", "Bebidas"];
 const MenuSection: React.FC<{
     title: string;
     apartado: MenuApartado;
-    recipes: Recipe[];
     allRecipes: Recipe[];
     onUpdate: (newApartado: MenuApartado) => void;
-}> = ({ title, apartado, recipes, allRecipes, onUpdate }) => {
+}> = ({ title, apartado, allRecipes, onUpdate }) => {
     const [editingSection, setEditingSection] = useState<string | null>(null);
     const [newSectionName, setNewSectionName] = useState('');
     const [search, setSearch] = useState<{ section: string; term: string }>({ section: '', term: '' });
@@ -98,9 +97,8 @@ const MenuSection: React.FC<{
                             <button onClick={() => handleDeleteSection(sectionName)} className="text-gray-400 hover:text-red-600"><TrashIcon className="h-4 w-4"/></button>
                         </div>
                         <div className="space-y-2">
-                            {/* FIX: Add Array.isArray check to prevent runtime errors with malformed data and fix type error. */}
                             {Array.isArray(recipeIds) && recipeIds.map(id => {
-                                const recipe = recipes.find(r => r.id === id);
+                                const recipe = allRecipes.find(r => r.id === id);
                                 return (
                                 <div key={id} className="flex justify-between items-center text-sm bg-gray-50 p-1.5 rounded">
                                     <span>{recipe?.name || 'Receta no encontrada'}</span>
@@ -111,11 +109,11 @@ const MenuSection: React.FC<{
                         </div>
                          <div className="relative mt-2">
                             <input type="text" placeholder="+ Añadir plato..." value={search.section === sectionName ? search.term : ''} onChange={e => setSearch({section: sectionName, term: e.target.value})} className="w-full text-sm p-1 border rounded" />
-                            {search.section === sectionName && searchResults.length > 0 && (
+                            {search.section === sectionName && search.term && (
                                 <div className="absolute z-10 w-full bg-white border rounded shadow-lg mt-1">
-                                    {searchResults.map(r => (
+                                    {searchResults.length > 0 ? searchResults.map(r => (
                                         <div key={r.id} onClick={() => handleAddRecipe(sectionName, r.id)} className="p-2 text-sm hover:bg-gray-100 cursor-pointer">{r.name}</div>
-                                    ))}
+                                    )) : <div className="p-2 text-sm text-gray-500 italic">No se encontraron recetas.</div>}
                                 </div>
                             )}
                         </div>
@@ -219,14 +217,12 @@ const CreacionMenusView: React.FC = () => {
                                 <MenuSection 
                                     title="Menú Comedor" 
                                     apartado={menu.comedor}
-                                    recipes={recipes}
                                     allRecipes={recipes}
                                     onUpdate={(newComedor) => handleUpdateMenu(service.id, { comedor: newComedor })}
                                 />
                                 <MenuSection 
                                     title="Menú Takeaway" 
                                     apartado={menu.takeaway}
-                                    recipes={recipes}
                                     allRecipes={recipes}
                                     onUpdate={(newTakeaway) => handleUpdateMenu(service.id, { takeaway: newTakeaway })}
                                 />
