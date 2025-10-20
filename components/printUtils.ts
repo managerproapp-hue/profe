@@ -1,7 +1,6 @@
 import { TeacherData, InstituteData } from './types';
 
 // Declare the libraries loaded from CDN
-declare var html2canvas: any;
 declare var jspdf: any;
 
 // Helper to fetch data safely from localStorage
@@ -16,7 +15,6 @@ const getStoredData = <T,>(key: string, defaultValue: T): T => {
 
 interface PdfOptions {
   orientation?: 'portrait' | 'landscape';
-  minimalHeader?: boolean;
 }
 
 // Helper to get image dimensions from base64 string to preserve aspect ratio
@@ -43,16 +41,15 @@ const getImageDimensions = (base64: string): Promise<{ width: number; height: nu
  * @param options Configuration options for the PDF.
  */
 export const downloadAsPdf = (title: string, contentHtml: string, fileName: string, options: PdfOptions = {}) => {
-    const { orientation = 'portrait', minimalHeader = false } = options;
+    const { orientation = 'portrait' } = options;
 
-    if (typeof html2canvas === 'undefined' || typeof jspdf === 'undefined') {
-        alert("Las librerías para generar PDF no están disponibles. Por favor, recargue la página.");
+    if (typeof jspdf === 'undefined') {
+        alert("La librería para generar PDF (jsPDF) no está disponible. Por favor, recargue la página.");
         return;
     }
 
     const { jsPDF } = jspdf;
     
-    // --- 1. RENDER ONLY THE CONTENT TO A CANVAS ---
     const contentContainer = document.createElement('div');
     contentContainer.style.position = 'fixed';
     contentContainer.style.left = '-9999px';
@@ -64,8 +61,8 @@ export const downloadAsPdf = (title: string, contentHtml: string, fileName: stri
     const styles = `
         @import url('https://rsms.me/inter/inter.css');
         body { font-family: 'Inter', sans-serif; color: #374151; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+        th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
         th { background-color: #f9fafb; font-weight: 600; }
         tr:nth-child(even) { background-color: #f9fafb; }
         .break-inside-avoid { break-inside: avoid; page-break-inside: avoid; }
@@ -74,49 +71,20 @@ export const downloadAsPdf = (title: string, contentHtml: string, fileName: stri
     contentContainer.innerHTML = `<style>${styles}</style><div id="pdf-content">${contentHtml}</div>`;
     document.body.appendChild(contentContainer);
 
-    html2canvas(contentContainer, {
-        scale: 2, // Higher resolution
-        useCORS: true,
-        allowTaint: true
-    }).then(async (canvas: any) => {
-        document.body.removeChild(contentContainer);
+    const pdf = new jsPDF({ orientation, unit: 'mm', format: 'a4' });
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const margin = 10;
+    const headerHeight = 25; // Increased space for a better header
+    const footerHeight = 15;
 
-        const teacherData = getStoredData<TeacherData>('teacher-app-data', { name: 'Profesor', email: '' });
-        const instituteData = getStoredData<InstituteData>('institute-app-data', { name: 'Instituto', address: '', cif: '' });
+    pdf.html(contentContainer, {
+        callback: async function (doc: any) {
+            const teacherData = getStoredData<TeacherData>('teacher-app-data', { name: 'Profesor', email: '' });
+            const instituteData = getStoredData<InstituteData>('institute-app-data', { name: 'Instituto', address: '', cif: '' });
 
-        const pdf = new jsPDF({ orientation, unit: 'mm', format: 'a4' });
-        
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        const margin = 10; // 1cm margin
-
-        // --- 2. CALCULATE PAGE LAYOUT ---
-        const headerHeight = 20; // Standard compact header
-        const footerHeight = 15;
-        const contentAreaHeight = pdfHeight - headerHeight - footerHeight;
-
-        const imgData = canvas.toDataURL('image/png');
-        const contentImgWidth = pdfWidth - margin * 2;
-        const contentImgHeight = (contentImgWidth / canvas.width) * canvas.height;
-        
-        const totalPages = Math.ceil(contentImgHeight / contentAreaHeight);
-
-        // --- 3. LOOP THROUGH PAGES AND BUILD PDF ---
-        let yOffset = 0;
-        for (let i = 1; i <= totalPages; i++) {
-            if (i > 1) {
-                pdf.addPage();
-            }
-
-            // --- A. ADD CONTENT SLICE ---
-            pdf.addImage(imgData, 'PNG', margin, -yOffset + headerHeight, contentImgWidth, contentImgHeight, undefined, 'FAST');
-
-            // --- B. ADD HEADER ON TOP ---
-            pdf.setFillColor(255, 255, 255);
-            pdf.rect(0, 0, pdfWidth, headerHeight, 'F'); 
-
-            const headerStartY = 7;
-            const logoHeight = 10;
+            const totalPages = doc.internal.getNumberOfPages();
+            
+            const logoHeight = 12;
             let instituteLogoRenderWidth = 0;
             let teacherLogoRenderWidth = 0;
 
@@ -124,46 +92,60 @@ export const downloadAsPdf = (title: string, contentHtml: string, fileName: stri
                 try { 
                     const dims = await getImageDimensions(instituteData.logo);
                     instituteLogoRenderWidth = (dims.width / dims.height) * logoHeight;
-                    pdf.addImage(instituteData.logo, 'PNG', margin, headerStartY, instituteLogoRenderWidth, logoHeight, undefined, 'FAST');
                 } catch(e) { console.error("Error adding institute logo", e); }
             }
             if (teacherData.logo) {
                  try { 
                     const dims = await getImageDimensions(teacherData.logo);
                     teacherLogoRenderWidth = (dims.width / dims.height) * logoHeight;
-                    pdf.addImage(teacherData.logo, 'PNG', pdfWidth - margin - teacherLogoRenderWidth, headerStartY, teacherLogoRenderWidth, logoHeight, undefined, 'FAST'); 
                 } catch(e) { console.error("Error adding teacher logo", e); }
             }
-
-            pdf.setFontSize(8);
-            pdf.setTextColor(80, 80, 80);
-            pdf.text(instituteData.name, margin + instituteLogoRenderWidth + 2, headerStartY + logoHeight / 2 + 1);
-            pdf.text(teacherData.name, pdfWidth - margin - teacherLogoRenderWidth - 2, headerStartY + logoHeight / 2 + 1, { align: 'right' });
             
-            pdf.setFontSize(14);
-            pdf.setTextColor(20, 20, 20);
-            pdf.text(title, pdfWidth / 2, headerStartY + 6, { align: 'center' });
+            for (let i = 1; i <= totalPages; i++) {
+                doc.setPage(i);
+                
+                // --- HEADER ---
+                const headerStartY = 8;
+                if (instituteData.logo && instituteLogoRenderWidth > 0) {
+                    doc.addImage(instituteData.logo, 'PNG', margin, headerStartY, instituteLogoRenderWidth, logoHeight, undefined, 'FAST');
+                }
+                if (teacherData.logo && teacherLogoRenderWidth > 0) {
+                    doc.addImage(teacherData.logo, 'PNG', pdfWidth - margin - teacherLogoRenderWidth, headerStartY, teacherLogoRenderWidth, logoHeight, undefined, 'FAST'); 
+                }
 
-            // Header line (provides space between header and content)
-            pdf.setDrawColor(229, 231, 235);
-            pdf.line(margin, headerHeight - 4, pdfWidth - margin, headerHeight - 4);
+                doc.setFontSize(8);
+                doc.setTextColor(80, 80, 80);
+                doc.text(instituteData.name, margin + instituteLogoRenderWidth + 2, headerStartY + logoHeight / 2 + 1.5);
+                doc.text(teacherData.name, pdfWidth - margin - teacherLogoRenderWidth - 2, headerStartY + logoHeight / 2 + 1.5, { align: 'right' });
+                
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(20, 20, 20);
+                doc.text(title, pdfWidth / 2, headerStartY + 7, { align: 'center' });
 
-            // --- C. ADD FOOTER ---
-            const pageNumText = `Página ${i} de ${totalPages}`;
-            pdf.setFontSize(8);
-            pdf.setTextColor(150, 150, 150);
-            pdf.text(pageNumText, pdfWidth - margin, pdfHeight - margin + 3, { align: 'right' });
+                doc.setDrawColor(229, 231, 235);
+                doc.line(margin, headerHeight - 5, pdfWidth - margin, headerHeight - 5);
+
+                // --- FOOTER ---
+                const pageNumText = `Página ${i} de ${totalPages}`;
+                doc.setFontSize(8);
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(150, 150, 150);
+                doc.text(new Date().toLocaleDateString(), margin, pdf.internal.pageSize.getHeight() - margin + 4);
+                doc.text(pageNumText, pdfWidth - margin, pdf.internal.pageSize.getHeight() - margin + 4, { align: 'right' });
+            }
             
-            yOffset += contentAreaHeight;
-        }
-
-        pdf.save(`${fileName}.pdf`);
-
-    }).catch((err: any) => {
-        console.error("Error generating PDF:", err);
-        alert("Hubo un error al generar el PDF.");
-        if (document.body.contains(contentContainer)) {
+            doc.save(`${fileName}.pdf`);
             document.body.removeChild(contentContainer);
+        },
+        margin: [headerHeight, margin, footerHeight, margin],
+        autoPaging: 'text',
+        width: pdfWidth - (margin * 2),
+        windowWidth: contentContainer.scrollWidth,
+        html2canvas: {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true
         }
     });
 };

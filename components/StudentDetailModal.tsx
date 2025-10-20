@@ -146,12 +146,12 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({ student, onClos
                 <p style="font-size: 1rem; color: #4b5563;">${student.emailOficial}</p>
             </div>
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
-            <div>
+        <div style="column-count: 2; column-gap: 2rem;">
+            <div style="break-inside: avoid;">
                 ${personalDataHtml}
                 ${gradesHtml}
             </div>
-            <div>
+            <div style="break-inside: avoid;">
                 ${interviewsHtml}
                 ${annotationsHtml}
             </div>

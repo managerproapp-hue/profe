@@ -470,7 +470,7 @@ const PlanningTab: React.FC<{
             `Planning: ${service.name} (${new Date(service.date).toLocaleDateString()})`, 
             html, 
             `planning_${service.name.replace(/\s+/g, '_')}`,
-            { orientation: 'landscape', minimalHeader: true }
+            { orientation: 'landscape' }
         );
         
         setOpenExportMenu(null);
@@ -669,7 +669,7 @@ const PartidasYGruposTab: React.FC<{
 
     const html = `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">${groupHtml}</div>`;
     
-    downloadAsPdf('Distribución de Grupos de Prácticas', html, 'distribucion_grupos', { minimalHeader: true });
+    downloadAsPdf('Distribución de Grupos de Prácticas', html, 'distribucion_grupos');
     setIsExportMenuOpen(false);
   };
   

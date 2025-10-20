@@ -274,7 +274,7 @@ const RecipeFormView: React.FC<{
     
     const handleDownloadRecipe = () => {
         let html = `
-            ${formData.imageUrl ? `<img src="${formData.imageUrl}" alt="${formData.name}" style="width: 100%; max-height: 300px; object-fit: cover; margin-bottom: 1.5rem; border-radius: 0.5rem;" />` : ''}
+            ${formData.imageUrl ? `<img src="${formData.imageUrl}" alt="${formData.name}" style="max-width: 100%; height: auto; display: block; border-radius: 0.5rem; margin-bottom: 1.5rem;" />` : ''}
             <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #eee; padding-bottom: 1rem; margin-bottom: 1.5rem;">
                 <div>
                     <p style="font-size: 0.875rem; color: #4f46e5; font-weight: 600;">${formData.category}</p>
@@ -292,26 +292,28 @@ const RecipeFormView: React.FC<{
         html += formData.elaborations.map(elab => `
             <div style="break-inside: avoid; margin-bottom: 2rem;">
                 <h3 style="font-size: 1.5rem; font-weight: bold; color: #166534; background-color: #f0fdf4; padding: 0.5rem 1rem; border-left: 4px solid #22c55e; border-radius: 0.25rem;">${elab.name}</h3>
-                <div style="display: grid; grid-template-columns: 40% 60%; gap: 1.5rem; margin-top: 1rem;">
-                    <div>
-                        <h4 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.75rem;">Ingredientes</h4>
-                        <ul style="list-style: none; padding: 0; font-size: 0.875rem;">
-                            ${elab.ingredients.map(ing => {
-                                const p = products.find(prod => prod.id === ing.productId);
-                                return `<li style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #f3f4f6;">
-                                    <span>${p?.name || 'N/A'}</span>
-                                    <span style="font-weight: 500;">${ing.quantity.toFixed(2)} ${ing.unit}</span>
-                                </li>`;
-                            }).join('')}
-                        </ul>
-                    </div>
-                    <div>
-                        <h4 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.75rem;">Pasos</h4>
-                        <ol style="padding-left: 1.25rem;">
-                            ${elab.steps.map(step => `<li style="margin-bottom: 0.75rem; color: #374151;">${step.description}</li>`).join('')}
-                        </ol>
-                    </div>
-                </div>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 1rem; border: none !important;">
+                    <tr style="vertical-align: top;">
+                        <td style="width: 40%; padding-right: 1rem; border: none !important;">
+                            <h4 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.75rem;">Ingredientes</h4>
+                            <ul style="list-style: none; padding: 0; font-size: 0.875rem;">
+                                ${elab.ingredients.map(ing => {
+                                    const p = products.find(prod => prod.id === ing.productId);
+                                    return `<li style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #f3f4f6;">
+                                        <span>${p?.name || 'N/A'}</span>
+                                        <span style="font-weight: 500; white-space: nowrap; padding-left: 1rem;">${ing.quantity.toFixed(2)} ${ing.unit}</span>
+                                    </li>`;
+                                }).join('')}
+                            </ul>
+                        </td>
+                        <td style="width: 60%; padding-left: 1rem; border: none !important;">
+                            <h4 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.75rem;">Pasos</h4>
+                            <ol style="padding-left: 1.25rem; margin: 0;">
+                                ${elab.steps.map(step => `<li style="margin-bottom: 0.75rem; color: #374151; line-height: 1.5;">${step.description}</li>`).join('')}
+                            </ol>
+                        </td>
+                    </tr>
+                </table>
             </div>
         `).join('');
 
