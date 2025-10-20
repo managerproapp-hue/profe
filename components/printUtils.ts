@@ -118,21 +118,22 @@ export const downloadAsPdf = (title: string, contentHtml: string, fileName: stri
                 doc.text(instituteData.name, margin + instituteLogoRenderWidth + 2, headerStartY + logoHeight / 2 + 1.5);
                 doc.text(teacherData.name, pdfWidth - margin - teacherLogoRenderWidth - 2, headerStartY + logoHeight / 2 + 1.5, { align: 'right' });
                 
-                doc.setFontSize(14);
-                doc.setFont('helvetica', 'bold');
-                doc.setTextColor(20, 20, 20);
-                doc.text(title, pdfWidth / 2, headerStartY + 7, { align: 'center' });
+                // User requested to remove the title from the header as it's redundant.
+                // doc.setFontSize(14);
+                // doc.setFont('helvetica', 'bold');
+                // doc.setTextColor(20, 20, 20);
+                // doc.text(title, pdfWidth / 2, headerStartY + 7, { align: 'center' });
 
                 doc.setDrawColor(229, 231, 235);
                 doc.line(margin, headerHeight - 5, pdfWidth - margin, headerHeight - 5);
 
                 // --- FOOTER ---
+                // Simplified footer to just show the page number, centered.
                 const pageNumText = `Página ${i} de ${totalPages}`;
                 doc.setFontSize(8);
                 doc.setFont('helvetica', 'normal');
                 doc.setTextColor(150, 150, 150);
-                doc.text(new Date().toLocaleDateString(), margin, pdf.internal.pageSize.getHeight() - margin + 4);
-                doc.text(pageNumText, pdfWidth - margin, pdf.internal.pageSize.getHeight() - margin + 4, { align: 'right' });
+                doc.text(pageNumText, pdfWidth / 2, pdf.internal.pageSize.getHeight() - 8, { align: 'center' });
             }
             
             doc.save(`${fileName}.pdf`);
