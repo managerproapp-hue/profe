@@ -253,9 +253,60 @@ const RecipeFormView: React.FC<{
     };
 
     const searchedProducts = useMemo(() => {
-        if (!ingredientSearch.term) return [];
-        return products.filter(p => p.name.toLowerCase().includes(ingredientSearch.term.toLowerCase())).slice(0, 5);
-    }, [ingredientSearch, products]);
+        const searchTerm = ingredientSearch.term.trim().toLowerCase();
+        if (!searchTerm) {
+            return [];
+        }
+
+        const searchTokens = searchTerm.split(/\s+/).filter(Boolean);
+        if (searchTokens.length === 0) {
+            return [];
+        }
+        
+        const filteredProducts = products.filter(product => {
+            const productNameLower = product.name.toLowerCase();
+            return searchTokens.every(token => productNameLower.includes(token));
+        });
+
+        const scoredProducts = filteredProducts.map(product => {
+            const productNameLower = product.name.toLowerCase();
+            let score = 0;
+
+            // Base score for being in the filtered list
+            score += 1;
+            
+            // Higher score if the product name starts with the full search term
+            if (productNameLower.startsWith(searchTerm)) {
+                score += 10;
+            }
+
+            // Bonus for each token being the start of a word
+            const productWords = productNameLower.split(/\s+/);
+            searchTokens.forEach(token => {
+                if (productWords.some(word => word.startsWith(token))) {
+                    score += 2;
+                }
+            });
+
+            // Highest score for exact match
+            if (productNameLower === searchTerm) {
+                score += 100;
+            }
+            
+            return { product, score };
+        });
+
+        // Sort by score descending, then alphabetically
+        return scoredProducts
+            .sort((a, b) => {
+                if (a.score !== b.score) {
+                    return b.score - a.score;
+                }
+                return a.product.name.localeCompare(b.product.name);
+            })
+            .map(item => item.product)
+            .slice(0, 5); // Limit results for performance and UI
+    }, [ingredientSearch.term, products]);
 
     const { totalCost, totalAllergens } = useMemo(() => {
         let cost = 0;
@@ -274,7 +325,7 @@ const RecipeFormView: React.FC<{
     
     const handleDownloadRecipe = () => {
         let html = `
-            ${formData.imageUrl ? `<img src="${formData.imageUrl}" alt="${formData.name}" style="max-width: 100%; height: auto; display: block; border-radius: 0.5rem; margin-bottom: 1.5rem;" />` : ''}
+            ${formData.imageUrl ? `<div style="text-align: center; margin-bottom: 1.5rem;"><img src="${formData.imageUrl}" alt="${formData.name}" style="max-width: 100%; max-height: 300px; height: auto; display: inline-block; border-radius: 0.5rem;" /></div>` : ''}
             <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #eee; padding-bottom: 1rem; margin-bottom: 1.5rem;">
                 <div>
                     <p style="font-size: 0.875rem; color: #4f46e5; font-weight: 600;">${formData.category}</p>
@@ -288,25 +339,25 @@ const RecipeFormView: React.FC<{
                 <p style="color: #4b5563;">${formData.description}</p>
             </div>` : ''}
         `;
-
+    
         html += formData.elaborations.map(elab => `
-            <div style="break-inside: avoid; margin-bottom: 2rem;">
+            <div style="break-inside: avoid; page-break-inside: avoid; margin-bottom: 2rem;">
                 <h3 style="font-size: 1.5rem; font-weight: bold; color: #166534; background-color: #f0fdf4; padding: 0.5rem 1rem; border-left: 4px solid #22c55e; border-radius: 0.25rem;">${elab.name}</h3>
-                <table style="width: 100%; border-collapse: collapse; margin-top: 1rem; border: none !important;">
+                <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
                     <tr style="vertical-align: top;">
-                        <td style="width: 40%; padding-right: 1rem; border: none !important;">
+                        <td style="width: 40%; padding-right: 1rem; border-right: 1px solid #eee;">
                             <h4 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.75rem;">Ingredientes</h4>
-                            <ul style="list-style: none; padding: 0; font-size: 0.875rem;">
+                            <table style="width: 100%; font-size: 0.875rem;">
                                 ${elab.ingredients.map(ing => {
                                     const p = products.find(prod => prod.id === ing.productId);
-                                    return `<li style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #f3f4f6;">
-                                        <span>${p?.name || 'N/A'}</span>
-                                        <span style="font-weight: 500; white-space: nowrap; padding-left: 1rem;">${ing.quantity.toFixed(2)} ${ing.unit}</span>
-                                    </li>`;
+                                    return `<tr>
+                                        <td style="padding: 0.5rem 0; border-bottom: 1px solid #f3f4f6;">${p?.name || 'N/A'}</td>
+                                        <td style="padding: 0.5rem 0; border-bottom: 1px solid #f3f4f6; text-align: right; font-weight: 500; white-space: nowrap;">${ing.quantity.toFixed(2)} ${ing.unit}</td>
+                                    </tr>`;
                                 }).join('')}
-                            </ul>
+                            </table>
                         </td>
-                        <td style="width: 60%; padding-left: 1rem; border: none !important;">
+                        <td style="width: 60%; padding-left: 1rem;">
                             <h4 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.75rem;">Pasos</h4>
                             <ol style="padding-left: 1.25rem; margin: 0;">
                                 ${elab.steps.map(step => `<li style="margin-bottom: 0.75rem; color: #374151; line-height: 1.5;">${step.description}</li>`).join('')}
@@ -316,14 +367,14 @@ const RecipeFormView: React.FC<{
                 </table>
             </div>
         `).join('');
-
+    
          if (formData.serviceNotes) {
             html += `<div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #eee;">
                 <h3 style="font-size: 1.25rem; font-weight: bold; margin-bottom: 0.75rem;">Notas de Servicio</h3>
                 <p style="color: #4b5563;">${formData.serviceNotes}</p>
             </div>`;
          }
-
+    
         const fileName = `ficha_tecnica_${formData.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}`;
         downloadAsPdf(`Ficha Técnica: ${formData.name}`, html, fileName);
     };
