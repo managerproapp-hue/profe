@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Service, Recipe, Product, MenusState, Menu, MenuApartado } from '../types';
-import { downloadAsPdf, exportToExcel } from './printUtils';
+import { downloadPdfWithTables, exportToExcel } from './printUtils';
 
 // Helper function to safely parse JSON from localStorage
 const safeJsonParse = <T,>(key: string, defaultValue: T): T => {
@@ -96,10 +96,26 @@ const PedidoDetalle: React.FC<{
     }, [pedido]);
     
     const handleDownloadPdf = () => {
-        const printableElement = document.getElementById(`printable-pedido-${service.id}`);
-        if(printableElement) {
-             downloadAsPdf(`Pedido para: ${service.name} (${new Date(service.date).toLocaleDateString()})`, printableElement.innerHTML, `pedido_${service.name.replace(/\s+/g, '_')}`);
-        }
+        const tables = pedidoByCategory.map(([category, items]) => {
+            const head = [['Producto', 'Cantidad', 'Unidad']];
+            const body = items
+                .sort((a,b) => a.name.localeCompare(b.name))
+                .map(item => [item.name, item.quantity.toFixed(3), item.unit]);
+
+            return {
+                head: [[{ content: category, colSpan: 3, styles: { halign: 'center', fontStyle: 'bold', fillColor: '#f0f9ff' } }]],
+                body: [...head, ...body],
+                options: {
+                    theme: 'grid'
+                }
+            };
+        });
+
+        downloadPdfWithTables(
+            `Pedido para: ${service.name} (${new Date(service.date).toLocaleDateString()}) - ${menu.pax} PAX`, 
+            `pedido_${service.name.replace(/\s+/g, '_')}`, 
+            tables
+        );
     };
 
     const handleExport = () => {

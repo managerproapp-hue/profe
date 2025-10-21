@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Student } from '../types';
 import { UsersIcon, GroupIcon, ServiceIcon, CalendarIcon, TrashIcon, CloseIcon, CogIcon, PlusIcon, PencilIcon, CheckIcon, XIcon, DownloadIcon } from './icons';
-import { downloadAsPdf, exportToExcel } from './printUtils';
+import { downloadPdfWithTables, exportToExcel } from './printUtils';
 
 
 // --- HELPER FUNCTION ---
@@ -408,80 +408,62 @@ const PlanningTab: React.FC<{
 
     const handleDownloadPdfPlanning = (service: Service) => {
         const serviceAssignments = planningAssignments[service.id] || {};
-        
-        const findLeaderName = (role: string) => {
+        const tables = [];
+
+        // Leaders Table
+        const leadersBody = LEADER_ROLES.map(role => {
             const studentNre = Object.keys(serviceAssignments).find(nre => serviceAssignments[nre] === role);
             const student = students.find(s => s.nre === studentNre);
-            return student ? `${student.apellido1}, ${student.nombre}` : 'Sin asignar';
-        };
+            return [role, student ? `${student.apellido1} ${student.apellido2}, ${student.nombre}` : 'Sin asignar'];
+        });
+        tables.push({
+            head: [['Líderes del Servicio']],
+            body: leadersBody,
+            options: { headStyles: { fillColor: '#d1fae5', textColor: '#065f46', fontStyle: 'bold' } }
+        });
 
-        const jefeCocina = findLeaderName("Jefe de Cocina");
-        const segundoJefeCocina = findLeaderName("2º Jefe de Cocina");
-        const segundoJefeTakeaway = findLeaderName("2º Jefe de Takeaway");
+        // Comedor Section
+        if (service.groupAssignments.comedor.length > 0) {
+            tables.push({ head: [['SERVICIO DE COMEDOR']], body: [], options: { headStyles: { fillColor: '#22c55e', textColor: 'white', fontStyle: 'bold', fontSize: 14 } } });
+            service.groupAssignments.comedor.forEach(groupName => {
+                const studentsInGroup = students.filter(s => studentGroupAssignments[s.nre] === groupName)
+                    .sort((a,b) => `${a.apellido1} ${a.apellido2}`.localeCompare(`${b.apellido1} ${b.apellido2}`));
+                const body = studentsInGroup.map(student => {
+                    const role = serviceAssignments[student.nre] || 'Sin asignar';
+                    return [`${student.apellido1} ${student.apellido2}, ${student.nombre}`, role];
+                });
+                tables.push({
+                    head: [[groupName, 'Rol']],
+                    body: body,
+                    options: { headStyles: { fillColor: '#f0fdf4', textColor: '#15803d' } }
+                });
+            });
+        }
+        
+        // Takeaway Section
+        if (service.groupAssignments.takeaway.length > 0) {
+            tables.push({ head: [['SERVICIO DE TAKEAWAY']], body: [], options: { headStyles: { fillColor: '#3b82f6', textColor: 'white', fontStyle: 'bold', fontSize: 14 } } });
+             service.groupAssignments.takeaway.forEach(groupName => {
+                const studentsInGroup = students.filter(s => studentGroupAssignments[s.nre] === groupName)
+                    .sort((a,b) => `${a.apellido1} ${a.apellido2}`.localeCompare(`${b.apellido1} ${b.apellido2}`));
+                const body = studentsInGroup.map(student => {
+                    const role = serviceAssignments[student.nre] || 'Sin asignar';
+                    return [`${student.apellido1} ${student.apellido2}, ${student.nombre}`, role];
+                });
+                tables.push({
+                    head: [[groupName, 'Rol']],
+                    body: body,
+                    options: { headStyles: { fillColor: '#dbeafe', textColor: '#1e40af' } }
+                });
+            });
+        }
 
-        const generateGroupsHtml = (groupIds: string[]) => {
-            if (groupIds.length === 0) return '<p style="font-size: 0.8rem; color: #6b7280; font-style: italic;">No hay partidas asignadas.</p>';
-            
-            const groupHtml = groupIds.map(groupName => {
-                const studentsInGroup = students.filter(s => studentGroupAssignments[s.nre] === groupName);
-                return `
-                    <div style="border: 1px solid #e5e7eb; border-radius: 0.375rem; padding: 0.5rem; break-inside: avoid;">
-                        <h4 style="font-size: 0.8rem; font-weight: bold; margin: 0 0 0.5rem 0;">${groupName}</h4>
-                        <table style="font-size: 0.65rem; width: 100%;">
-                            <thead>
-                                <tr style="border-bottom: 1px solid #ccc;">
-                                    <th style="padding: 2px; text-align: left; width: 60%;">Alumno</th>
-                                    <th style="padding: 2px; text-align: left;">Rol</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${studentsInGroup.sort((a,b) => `${a.apellido1} ${a.apellido2} ${a.nombre}`.localeCompare(`${b.apellido1} ${b.apellido2} ${b.nombre}`)).map(student => {
-                                    const role = serviceAssignments[student.nre] || 'Sin asignar';
-                                    const fullName = `${student.apellido1} ${student.apellido2}, ${student.nombre}`;
-                                    return `
-                                        <tr style="border-top: 1px solid #eee;">
-                                            <td style="padding: 2px;">${fullName}</td>
-                                            <td style="padding: 2px;">${role}</td>
-                                        </tr>`;
-                                }).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                `;
-            }).join('');
-
-            return `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.75rem;">${groupHtml}</div>`;
-        };
-        
-        const comedorGroupsHtml = generateGroupsHtml(service.groupAssignments.comedor);
-        const takeawayGroupsHtml = generateGroupsHtml(service.groupAssignments.takeaway);
-        
-        const html = `
-            <div style="margin-bottom: 1.5rem;">
-                <h3 style="font-size: 1.25rem; font-weight: bold; color: #166534; border-bottom: 2px solid #22c55e; padding-bottom: 0.25rem; margin-bottom: 0.75rem;">SERVICIO DE COMEDOR</h3>
-                <div style="font-size: 0.9rem; margin-bottom: 1rem;">
-                    <p><strong style="width: 150px; display: inline-block;">Jefe de Cocina:</strong> ${jefeCocina}</p>
-                    <p><strong style="width: 150px; display: inline-block;">2º Jefe de Cocina:</strong> ${segundoJefeCocina}</p>
-                </div>
-                ${comedorGroupsHtml}
-            </div>
-            
-            <div style="break-before: auto;">
-                <h3 style="font-size: 1.25rem; font-weight: bold; color: #1d4ed8; border-bottom: 2px solid #3b82f6; padding-bottom: 0.25rem; margin-bottom: 0.75rem;">SERVICIO DE TAKEAWAY</h3>
-                <div style="font-size: 0.9rem; margin-bottom: 1rem;">
-                    <p><strong style="width: 150px; display: inline-block;">2º Jefe de Takeaway:</strong> ${segundoJefeTakeaway}</p>
-                </div>
-                ${takeawayGroupsHtml}
-            </div>
-        `;
-        
-        downloadAsPdf(
-            `Planning: ${service.name} (${new Date(service.date).toLocaleDateString()})`, 
-            html, 
+        downloadPdfWithTables(
+            `Planning: ${service.name} (${new Date(service.date).toLocaleDateString()})`,
             `planning_${service.name.replace(/\s+/g, '_')}`,
+            tables,
             { orientation: 'landscape' }
         );
-        
         setOpenExportMenu(null);
     };
 
@@ -660,27 +642,26 @@ const PartidasYGruposTab: React.FC<{
   };
 
   const handleDownloadPdfGroups = () => {
-    let groupHtml = '';
-    practicaGroups.forEach(group => {
-        const members = students.filter(s => studentGroupAssignments[s.nre] === group);
-        groupHtml += `
-            <div style="break-inside: avoid; margin-bottom: 1rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 0.75rem; page-break-inside: avoid;">
-                <h3 style="font-size: 1rem; font-weight: bold; margin-bottom: 0.5rem;">${group} (${members.length} miembros)</h3>
-                ${members.length > 0 ? `
-                    <table style="margin-top: 0.5rem; width: 100%;">
-                        <thead><tr><th style="font-size: 0.75rem; text-align: left; padding: 4px;">#</th><th style="font-size: 0.75rem; text-align: left; padding: 4px;">Nombre Completo</th></tr></thead>
-                        <tbody>
-                            ${members.sort((a,b) => `${a.apellido1} ${a.apellido2}`.localeCompare(`${b.apellido1} ${b.apellido2}`)).map((m, i) => `<tr style="font-size: 0.75rem;"><td style="padding: 4px;">${i+1}</td><td style="padding: 4px;">${m.apellido1} ${m.apellido2}, ${m.nombre}</td></tr>`).join('')}
-                        </tbody>
-                    </table>
-                ` : '<p style="font-size: 0.75rem; color: #6b7280;">No hay alumnos en este grupo.</p>'}
-            </div>
-        `;
+    const tables = practicaGroups.map(group => {
+        const members = students.filter(s => studentGroupAssignments[s.nre] === group)
+            .sort((a,b) => `${a.apellido1} ${a.apellido2}`.localeCompare(`${b.apellido1} ${b.apellido2}`));
+        
+        const head = [[`#`, `Nombre Completo`]];
+        const body = members.map((m, i) => [String(i + 1), `${m.apellido1} ${m.apellido2}, ${m.nombre}`]);
+
+        return {
+            head: [[{ content: `${group} (${members.length} miembros)`, colSpan: 2, styles: { halign: 'center', fontStyle: 'bold' } }]],
+            body: [
+                ...head, // Sub-header
+                ...body
+            ],
+            options: {
+                theme: 'grid'
+            }
+        };
     });
 
-    const html = `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">${groupHtml}</div>`;
-    
-    downloadAsPdf('Distribución de Grupos de Prácticas', html, 'distribucion_grupos');
+    downloadPdfWithTables('Distribución de Grupos de Prácticas', 'distribucion_grupos', tables);
     setIsExportMenuOpen(false);
   };
   

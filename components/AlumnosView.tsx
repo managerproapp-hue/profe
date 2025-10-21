@@ -6,7 +6,7 @@ import { StudentDetailModal } from './StudentDetailModal';
 import ImportModal from './ImportModal';
 import AddEditStudentModal from './EditStudentModal';
 import { EyeIcon, PencilIcon, TrashIcon, ViewGridIcon, ViewListIcon, PlusIcon, DownloadIcon } from './icons';
-import { downloadAsPdf, exportToExcel } from './printUtils';
+import { downloadPdfWithTables, exportToExcel } from './printUtils';
 
 interface AlumnosViewProps {
   students: Student[];
@@ -106,31 +106,16 @@ const AlumnosView: React.FC<AlumnosViewProps> = ({ students, setStudents, evalua
 
 
   const handleExportPdf = () => {
-    const tableHtml = `
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Nombre Completo</th>
-            <th>NRE</th>
-            <th>Grupo</th>
-            <th>Email</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${filteredStudents.map((s, i) => `
-            <tr>
-              <td>${i + 1}</td>
-              <td>${s.apellido1} ${s.apellido2}, ${s.nombre}</td>
-              <td>${s.nre}</td>
-              <td>${s.grupo}</td>
-              <td>${s.emailOficial}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
-    downloadAsPdf('Listado de Alumnos', tableHtml, 'listado_alumnos');
+    const head = [['#', 'Nombre Completo', 'NRE', 'Grupo', 'Email']];
+    const body = filteredStudents.map((s, i) => [
+      String(i + 1),
+      `${s.apellido1} ${s.apellido2}, ${s.nombre}`,
+      s.nre,
+      s.grupo,
+      s.emailOficial,
+    ]);
+
+    downloadPdfWithTables('Listado de Alumnos', 'listado_alumnos', [{ head, body }]);
   };
 
   const handleExportXlsx = () => {

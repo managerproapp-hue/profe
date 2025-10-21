@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { Recipe, Product, RecipeIngredient, RecipeStep, Elaboration } from '../types';
 import { ALLERGENS, PRODUCT_UNITS, PRODUCT_CATEGORIES, RECIPE_CATEGORIES } from '../constants';
 import { PencilIcon, PlusIcon, TrashIcon, BackIcon, UploadIcon, EyeIcon, DownloadIcon, XIcon, CheckIcon, ClipboardIcon, CodeBracketIcon, SearchIcon, LinkIcon } from './icons';
-import { downloadAsPdf } from './printUtils';
+import { downloadPdfFromHtml } from './printUtils';
 
 // --- HELPER FUNCTIONS ---
 const uuidv4 = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -382,7 +382,7 @@ const RecipeFormView: React.FC<{
          }
     
         const fileName = `ficha_tecnica_${formData.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}`;
-        downloadAsPdf(`Ficha Técnica: ${formData.name}`, html, fileName);
+        downloadPdfFromHtml(`Ficha Técnica: ${formData.name}`, html, fileName);
     };
 
     return (

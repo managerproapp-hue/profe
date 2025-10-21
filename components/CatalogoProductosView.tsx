@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Product } from '../types';
 import { PRODUCT_CATEGORIES, PRODUCT_UNITS, ALLERGENS, ALLERGEN_MAP, normalizeCategory } from '../constants';
 import { PlusIcon, PencilIcon, TrashIcon, UploadIcon, DownloadIcon, CheckIcon, XIcon } from './icons';
-import { downloadAsPdf, exportToExcel } from './printUtils';
+import { downloadPdfWithTables, exportToExcel } from './printUtils';
 
 
 // Simple UUID generator
@@ -190,31 +190,16 @@ const CatalogoProductosView: React.FC = () => {
     }, [products, searchTerm]);
     
     const handleDownloadPdfCatalog = () => {
-        const tableHtml = `
-            <table>
-                <thead>
-                    <tr>
-                        <th>Producto</th>
-                        <th>Categoría</th>
-                        <th>Precio</th>
-                        <th>Unidad</th>
-                        <th>Alérgenos</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${filteredProducts.map(p => `
-                        <tr>
-                            <td>${p.name}</td>
-                            <td>${p.category}</td>
-                            <td>${p.price.toFixed(2)} €</td>
-                            <td>${p.unit}</td>
-                            <td>${p.allergens.join(', ')}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        `;
-        downloadAsPdf('Catálogo de Productos', tableHtml, 'catalogo_productos');
+        const head = [['Producto', 'Categoría', 'Precio', 'Unidad', 'Alérgenos']];
+        const body = filteredProducts.map(p => [
+            p.name,
+            p.category,
+            `${p.price.toFixed(2)} €`,
+            p.unit,
+            p.allergens.join(', ')
+        ]);
+        
+        downloadPdfWithTables('Catálogo de Productos', 'catalogo_productos', [{ head, body }]);
         setIsExportMenuOpen(false);
     };
 

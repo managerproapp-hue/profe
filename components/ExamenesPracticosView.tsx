@@ -169,7 +169,17 @@ const ExamenesPracticosView: React.FC<ExamenesPracticosViewProps> = ({ students,
         return totalScore;
     }, []);
 
-    const finalScore = useMemo(() => calculateFinalScore(studentExam, activeRubric), [studentExam, activeRubric, calculateFinalScore]);
+    useEffect(() => {
+        if (studentExam && selectedStudentNre) {
+            const newFinalScore = calculateFinalScore(studentExam, activeRubric);
+            // Only update if the score is different to avoid re-render loops
+            if (studentExam.finalScore !== newFinalScore) {
+                updateExamData(selectedStudentNre, activeTab, { finalScore: newFinalScore });
+            }
+        }
+    }, [studentExam?.scores, studentExam?.finalScore, selectedStudentNre, activeTab, activeRubric, calculateFinalScore, updateExamData, studentExam]);
+    
+    const finalScore = studentExam?.finalScore ?? 0;
 
     const gradedStudentsNREs = useMemo(() => {
         return new Set(exams.filter(e => e.examType === activeTab && e.scores.length > 0).map(e => e.studentNre));

@@ -1,8 +1,8 @@
-
 import React, { useState, useMemo, useCallback } from 'react';
 import { Student, EvaluationsState, Service, StudentGroupAssignments, GroupEvaluation, IndividualEvaluation, EvaluationItemScore } from '../types';
 import { GROUP_EVALUATION_ITEMS, INDIVIDUAL_EVALUATION_ITEMS } from '../constants';
-import { BackIcon, CheckIcon, ClipboardIcon } from './icons';
+import { BackIcon, CheckIcon, DownloadIcon } from './icons';
+import { exportToExcel, downloadPdfWithTables } from './printUtils';
 
 interface GestionNotasViewProps {
   students: Student[];
@@ -249,62 +249,18 @@ const EvaluationForm: React.FC<{
     );
 };
 
-
-const NotasSummaryView: React.FC<GestionNotasViewProps & {
+interface NotasSummaryViewProps {
+    students: Student[];
+    evaluations: EvaluationsState;
     services: Service[];
     studentGroupAssignments: StudentGroupAssignments;
     onEvaluateService: (serviceId: string) => void;
-}> = ({ students, evaluations, services, studentGroupAssignments, onEvaluateService }) => {
+    studentsByGroup: [string, Student[]][];
+    getScoresForStudent: (student: Student) => { serviceScores: Record<string, { group: number | null, individual: number | null }>, average: number };
+}
+
+const NotasSummaryView: React.FC<NotasSummaryViewProps> = ({ services, onEvaluateService, studentsByGroup, getScoresForStudent }) => {
     
-    const studentsByGroup = useMemo(() => {
-        const grouped: { [key: string]: Student[] } = {};
-        students.forEach(s => {
-            const groupName = s.grupo || 'Sin Grupo';
-            if (!grouped[groupName]) grouped[groupName] = [];
-            grouped[groupName].push(s);
-        });
-
-        // Sort students within each group
-        for (const groupName in grouped) {
-            grouped[groupName].sort((a, b) => {
-                const nameA = `${a.apellido1} ${a.apellido2} ${a.nombre}`.toLowerCase();
-                const nameB = `${b.apellido1} ${b.apellido2} ${b.nombre}`.toLowerCase();
-                return nameA.localeCompare(nameB);
-            });
-        }
-        
-        return Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b));
-    }, [students]);
-
-    const getScoresForStudent = useCallback((student: Student) => {
-        const serviceScores: { [serviceId: string]: { group: number | null, individual: number | null } } = {};
-        let totalScore = 0;
-        let servicesCounted = 0;
-
-        services.forEach(service => {
-            const indEval = evaluations.individual.find(e => e.serviceId === service.id && e.studentNre === student.nre);
-            
-            if (indEval && indEval.attendance === 'present') {
-                const practiceGroup = studentGroupAssignments[student.nre];
-                const groupEval = evaluations.group.find(e => e.serviceId === service.id && e.groupId === practiceGroup);
-
-                const individualScore = calculateScore(indEval.scores);
-                const groupScore = groupEval ? calculateScore(groupEval.scores) : 0;
-                
-                serviceScores[service.id] = { group: groupScore, individual: individualScore };
-                totalScore += individualScore + groupScore;
-                servicesCounted++;
-            } else {
-                serviceScores[service.id] = { group: null, individual: null }; // null indicates absence or not graded
-            }
-        });
-        
-        const average = servicesCounted > 0 ? totalScore / servicesCounted : 0;
-
-        return { serviceScores, average };
-
-    }, [evaluations, services, studentGroupAssignments]);
-
     if (services.length === 0) {
          return (
             <div className="bg-white p-8 rounded-lg shadow-md text-center">
@@ -386,6 +342,128 @@ const GestionNotasView: React.FC<GestionNotasViewProps> = ({ students, evaluatio
     const services = useMemo(() => safeJsonParse<Service[]>('practicaServices', []).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()), []);
     const studentGroupAssignments = useMemo(() => safeJsonParse<StudentGroupAssignments>('studentGroupAssignments', {}), []);
 
+    const studentsByGroup = useMemo(() => {
+        const grouped: { [key: string]: Student[] } = {};
+        students.forEach(s => {
+            const groupName = s.grupo || 'Sin Grupo';
+            if (!grouped[groupName]) grouped[groupName] = [];
+            grouped[groupName].push(s);
+        });
+
+        for (const groupName in grouped) {
+            grouped[groupName].sort((a, b) => {
+                const nameA = `${a.apellido1} ${a.apellido2} ${a.nombre}`.toLowerCase();
+                const nameB = `${b.apellido1} ${b.apellido2} ${b.nombre}`.toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
+        }
+        
+        return Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b));
+    }, [students]);
+
+    const getScoresForStudent = useCallback((student: Student) => {
+        const serviceScores: { [serviceId: string]: { group: number | null, individual: number | null } } = {};
+        let totalScore = 0;
+        let servicesCounted = 0;
+
+        services.forEach(service => {
+            const indEval = evaluations.individual.find(e => e.serviceId === service.id && e.studentNre === student.nre);
+            
+            if (indEval && indEval.attendance === 'present') {
+                const practiceGroup = studentGroupAssignments[student.nre];
+                const groupEval = evaluations.group.find(e => e.serviceId === service.id && e.groupId === practiceGroup);
+
+                const individualScore = calculateScore(indEval.scores);
+                const groupScore = groupEval ? calculateScore(groupEval.scores) : 0;
+                
+                serviceScores[service.id] = { group: groupScore, individual: individualScore };
+                totalScore += individualScore + groupScore;
+                servicesCounted++;
+            } else {
+                serviceScores[service.id] = { group: null, individual: null }; // null indicates absence or not graded
+            }
+        });
+        
+        const average = servicesCounted > 0 ? totalScore / servicesCounted : 0;
+
+        return { serviceScores, average };
+
+    }, [evaluations, services, studentGroupAssignments]);
+    
+    const handleExportPdf = () => {
+        const head = [
+            [
+                { content: 'Alumno', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
+                ...services.map(s => ({ content: s.name, colSpan: 3, styles: { halign: 'center' } })),
+                { content: 'Media Final', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } }
+            ],
+            services.flatMap(() => [{ content: 'G', styles: { halign: 'center' } }, { content: 'I', styles: { halign: 'center' } }, { content: 'Total', styles: { halign: 'center', fontStyle: 'bold' } }])
+        ];
+    
+        const body: any[][] = [];
+    
+        studentsByGroup.forEach(([groupName, groupStudents]) => {
+            body.push([{ content: groupName, colSpan: services.length * 3 + 2, styles: { fontStyle: 'bold', fillColor: '#f3f4f6' } }]);
+            
+            groupStudents.forEach(student => {
+                const { serviceScores, average } = getScoresForStudent(student);
+                const rowData: any[] = [
+                    `${student.apellido1} ${student.apellido2}, ${student.nombre}`
+                ];
+                services.forEach(service => {
+                    const scores = serviceScores[service.id];
+                    if (scores.group !== null) {
+                        const total = (scores.group || 0) + (scores.individual || 0);
+                        rowData.push(scores.group?.toFixed(2) ?? 'N/A');
+                        rowData.push(scores.individual?.toFixed(2) ?? 'N/A');
+                        rowData.push({ content: total.toFixed(2), styles: { fontStyle: 'bold' } });
+                    } else {
+                        rowData.push({ content: 'AUSENTE', colSpan: 3, styles: { halign: 'center', textColor: [220, 38, 38] } });
+                    }
+                });
+                rowData.push({ content: average.toFixed(2), styles: { fontStyle: 'bold' } });
+                body.push(rowData);
+            });
+        });
+    
+        downloadPdfWithTables(
+            'Resumen de Notas de Servicios',
+            'notas_servicios',
+            [{ head, body }],
+            { orientation: 'landscape' }
+        );
+    };
+
+    const handleExportXlsx = () => {
+        const dataToExport: any[] = [];
+        studentsByGroup.forEach(([groupName, groupStudents]) => {
+            groupStudents.forEach(student => {
+                const { serviceScores, average } = getScoresForStudent(student);
+                const row: any = {
+                    'Grupo Académico': student.grupo,
+                    'Alumno': `${student.apellido1} ${student.apellido2}, ${student.nombre}`,
+                };
+    
+                services.forEach(service => {
+                    const scores = serviceScores[service.id];
+                    const serviceName = service.name.replace(/\s/g, '_');
+                    if (scores.group !== null) {
+                        row[`${serviceName}_Grupo`] = scores.group?.toFixed(2);
+                        row[`${serviceName}_Individual`] = scores.individual?.toFixed(2);
+                        row[`${serviceName}_Total`] = ((scores.group || 0) + (scores.individual || 0)).toFixed(2);
+                    } else {
+                        row[`${serviceName}_Total`] = 'AUSENTE';
+                    }
+                });
+    
+                row['Media_Final_Servicios'] = average.toFixed(2);
+                dataToExport.push(row);
+            });
+        });
+    
+        exportToExcel(dataToExport, 'notas_servicios', 'Notas Servicios');
+    };
+
     const handleSelectService = (serviceId: string) => {
         setSelectedServiceId(serviceId);
         setView('evaluate');
@@ -408,13 +486,25 @@ const GestionNotasView: React.FC<GestionNotasViewProps> = ({ students, evaluatio
             </header>
 
             {view === 'summary' && (
+                <div className="flex justify-end gap-2 mb-4">
+                    <button onClick={handleExportXlsx} className="bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-1">
+                        <DownloadIcon className="h-5 w-5"/> XLSX
+                    </button>
+                    <button onClick={handleExportPdf} className="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-1">
+                        <DownloadIcon className="h-5 w-5"/> PDF
+                    </button>
+                </div>
+            )}
+
+            {view === 'summary' && (
                 <NotasSummaryView 
                     students={students}
                     evaluations={evaluations}
-                    setEvaluations={setEvaluations}
                     services={services}
                     studentGroupAssignments={studentGroupAssignments}
                     onEvaluateService={handleSelectService}
+                    studentsByGroup={studentsByGroup}
+                    getScoresForStudent={getScoresForStudent}
                 />
             )}
 
