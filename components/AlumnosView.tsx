@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Student, EvaluationsState, StudentPracticalExam, TheoreticalExamGrades } from '../types';
+import { Student, EvaluationsState, StudentPracticalExam, TheoreticalExamGrades, CourseGrades } from '../types';
 import StudentTable from './StudentTable';
 import { StudentDetailModal } from './StudentDetailModal';
 import ImportModal from './ImportModal';
@@ -13,6 +13,7 @@ interface AlumnosViewProps {
   evaluations: EvaluationsState;
   practicalExams: StudentPracticalExam[];
   academicGrades: {[nre: string]: TheoreticalExamGrades};
+  courseGrades: {[nre: string]: CourseGrades};
 }
 
 type ViewMode = 'grid' | 'list';
@@ -39,82 +40,71 @@ const StudentCard: React.FC<{ student: Student; index: number; onSelect: () => v
 );
 
 
-const AlumnosView: React.FC<AlumnosViewProps> = ({ students, setStudents, evaluations, practicalExams, academicGrades }) => {
-  const [studentToView, setStudentToView] = useState<Student | null>(null);
+const AlumnosView: React.FC<AlumnosViewProps> = ({ students, setStudents, evaluations, practicalExams, academicGrades, courseGrades }) => {
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [studentToEdit, setStudentToEdit] = useState<Student | null>(null);
-  const [isImporting, setIsImporting] = useState(false);
-  const [isAdding, setIsAdding] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [filter, setFilter] = useState('');
-  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
-
-  const handleSaveStudent = (studentToSave: Student) => {
-    const isNew = !students.some(s => s.nre === studentToSave.nre);
-    if (isNew) {
-      setStudents(prev => [studentToSave, ...prev]);
-    } else {
-      setStudents(prev => prev.map(s => s.nre === studentToSave.nre ? studentToSave : s));
-    }
-    
-    // Update selected student view if it was being edited
-    if (studentToView && studentToView.nre === studentToSave.nre) {
-        setStudentToView(studentToSave);
-    }
-
-    closeModals();
-  };
-  
-  const handleUpdateStudent = (updatedStudent: Student) => {
-    setStudents(prev => prev.map(s => s.nre === updatedStudent.nre ? updatedStudent : s));
-    if (studentToView && studentToView.nre === updatedStudent.nre) {
-      setStudentToView(updatedStudent);
-    }
-  };
-
-  const closeModals = () => {
-    setStudentToEdit(null);
-    setIsAdding(false);
-    setIsImporting(false);
-    setStudentToView(null);
-  };
-
-  const handleDeleteStudent = useCallback((studentNre: string) => {
-    const studentToDelete = students.find(s => s.nre === studentNre);
-    const studentName = studentToDelete ? `${studentToDelete.nombre} ${studentToDelete.apellido1}` : 'este alumno';
-
-    if (window.confirm(`¿Estás seguro de que quieres eliminar a ${studentName}? Esta acción no se puede deshacer.`)) {
-        setStudents(prev => prev.filter(s => s.nre !== studentNre));
-        if (studentToView?.nre === studentNre) {
-            setStudentToView(null);
-        }
-    }
-  }, [students, setStudents, studentToView]);
-
-  const handleImportSave = (newStudents: Student[]) => {
-      const existingNres = new Set(students.map(s => s.nre));
-      const studentsToAdd = newStudents.filter(s => !existingNres.has(s.nre));
-      setStudents(prev => [...prev, ...studentsToAdd]);
-      setIsImporting(false);
-  };
-  
-  const sortedStudents = useMemo(() => {
-    return [...students].sort((a, b) => {
-        const nameA = `${a.apellido1} ${a.apellido2} ${a.nombre}`.toLowerCase();
-        const nameB = `${b.apellido1} ${b.apellido2} ${b.nombre}`.toLowerCase();
-        return nameA.localeCompare(nameB);
-    });
-  }, [students]);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isAddEditModalOpen, setIsAddEditModalOpen] = useState(false);
 
   const filteredStudents = useMemo(() => {
-    if (!filter) return sortedStudents;
-    return sortedStudents.filter(student =>
-      `${student.nombre} ${student.apellido1} ${student.apellido2} ${student.nre} ${student.grupo}`
-        .toLowerCase()
-        .includes(filter.toLowerCase())
-    );
-  }, [sortedStudents, filter]);
+    return students
+      .filter(s =>
+        `${s.nombre} ${s.apellido1} ${s.apellido2}`.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      .sort((a, b) => a.apellido1.localeCompare(b.apellido1));
+  }, [students, searchTerm]);
+
+  const handleSelectStudent = (student: Student) => {
+    setSelectedStudent(student);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleEditStudent = (student: Student) => {
+    setStudentToEdit(student);
+    setIsAddEditModalOpen(true);
+  };
+
+  const handleAddStudent = () => {
+    setStudentToEdit(null);
+    setIsAddEditModalOpen(true);
+  };
+
+  const handleDeleteStudent = (nre: string) => {
+    if (window.confirm('¿Estás seguro de que quieres eliminar este alumno?')) {
+      setStudents(prev => prev.filter(s => s.nre !== nre));
+    }
+  };
+
+  const handleSaveStudent = (studentData: Student) => {
+    setStudents(prev => {
+      const existing = prev.find(s => s.nre === studentData.nre);
+      if (existing) {
+        return prev.map(s => s.nre === studentData.nre ? studentData : s);
+      } else {
+        return [...prev, studentData];
+      }
+    });
+    setIsAddEditModalOpen(false);
+  };
   
-  const handleDownloadPdfList = () => {
+  const handleImportSave = (newStudents: Student[]) => {
+    setStudents(currentStudents => {
+        const studentNREs = new Set(currentStudents.map(s => s.nre));
+        const uniqueNewStudents = newStudents.filter(ns => !studentNREs.has(ns.nre));
+        return [...currentStudents, ...uniqueNewStudents];
+    });
+    setIsImportModalOpen(false);
+  };
+  
+  const handleUpdateStudentData = (updatedStudent: Student) => {
+      setStudents(prev => prev.map(s => s.nre === updatedStudent.nre ? updatedStudent : s));
+  };
+
+
+  const handleExportPdf = () => {
     const tableHtml = `
       <table>
         <thead>
@@ -123,155 +113,129 @@ const AlumnosView: React.FC<AlumnosViewProps> = ({ students, setStudents, evalua
             <th>Nombre Completo</th>
             <th>NRE</th>
             <th>Grupo</th>
-            <th>Email Oficial</th>
-            <th>Teléfono</th>
+            <th>Email</th>
           </tr>
         </thead>
         <tbody>
-          ${filteredStudents.map((s, index) => `
+          ${filteredStudents.map((s, i) => `
             <tr>
-              <td>${index + 1}</td>
+              <td>${i + 1}</td>
               <td>${s.apellido1} ${s.apellido2}, ${s.nombre}</td>
               <td>${s.nre}</td>
               <td>${s.grupo}</td>
               <td>${s.emailOficial}</td>
-              <td>${s.telefono}</td>
             </tr>
           `).join('')}
         </tbody>
       </table>
     `;
     downloadAsPdf('Listado de Alumnos', tableHtml, 'listado_alumnos');
-    setIsExportMenuOpen(false);
   };
 
-  const handleExportExcel = () => {
-    const dataToExport = filteredStudents.map((s, index) => ({
-        '#': index + 1,
+  const handleExportXlsx = () => {
+    const data = filteredStudents.map(s => ({
+        'NRE': s.nre,
+        'Expediente': s.expediente,
         'Apellido 1': s.apellido1,
         'Apellido 2': s.apellido2,
         'Nombre': s.nombre,
-        'NRE': s.nre,
-        'Expediente': s.expediente,
         'Grupo': s.grupo,
         'Subgrupo': s.subgrupo,
         'Fecha Nacimiento': s.fechaNacimiento,
-        'Email Oficial': s.emailOficial,
-        'Email Personal': s.emailPersonal,
         'Teléfono': s.telefono,
         'Teléfono 2': s.telefono2,
+        'Email Personal': s.emailPersonal,
+        'Email Oficial': s.emailOficial,
     }));
-    exportToExcel(dataToExport, 'listado_alumnos', 'Alumnos');
-    setIsExportMenuOpen(false);
+    exportToExcel(data, 'listado_alumnos', 'Alumnos');
   };
-
 
   return (
     <div className="p-8">
-      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <div>
-            <h1 className="text-3xl font-bold text-gray-800">Gestión de Alumnos</h1>
-            <p className="mt-1 text-gray-600">({students.length} alumnos en total)</p>
-        </div>
-        <div className="flex items-center gap-2">
-           <button 
-            onClick={() => setIsAdding(true)}
-            className="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center"
-          >
-            <PlusIcon className="h-5 w-5 mr-1" />
-            Añadir Alumno
-          </button>
-          <button 
-            onClick={() => setIsImporting(true)}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
-          >
-            Importar
-          </button>
-           <div className="relative">
-                <button 
-                    onClick={() => setIsExportMenuOpen(prev => !prev)}
-                    className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center"
-                >
-                    <DownloadIcon className="h-5 w-5 mr-1"/>
-                    Exportar
-                </button>
-                {isExportMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border">
-                        <button onClick={handleDownloadPdfList} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Descargar PDF</button>
-                        <button onClick={handleExportExcel} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Exportar a Excel</button>
-                    </div>
-                )}
-            </div>
-        </div>
+      <header className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-800">Gestión de Alumnos ({students.length}) <span className="text-sm font-bold text-yellow-500 bg-yellow-100 px-2 py-1 rounded-md">v1.2</span></h1>
+        <p className="mt-2 text-gray-600">Busca, visualiza, añade o edita la información de tus alumnos.</p>
       </header>
 
-      <div className="bg-white p-4 rounded-lg shadow-md mb-6">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <input
-                type="text"
-                placeholder="Buscar por nombre, NRE, grupo..."
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-                className="w-full md:w-1/2 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
-            <div className="flex items-center bg-gray-100 rounded-lg p-1">
-                <button onClick={() => setViewMode('grid')} className={`p-2 rounded-md ${viewMode === 'grid' ? 'bg-white shadow' : ''}`} title="Vista de Tarjetas">
-                    <ViewGridIcon className={`h-5 w-5 ${viewMode === 'grid' ? 'text-teal-600' : 'text-gray-500'}`} />
+      <div className="bg-white p-4 rounded-lg shadow-md mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <input
+          type="text"
+          placeholder="Buscar alumno por nombre..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          className="w-full sm:w-1/3 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+        />
+        <div className="flex items-center gap-2">
+            <button onClick={() => setViewMode('grid')} className={`p-2 rounded-md ${viewMode === 'grid' ? 'bg-teal-500 text-white' : 'bg-gray-200 text-gray-600'}`}><ViewGridIcon className="h-5 w-5"/></button>
+            <button onClick={() => setViewMode('list')} className={`p-2 rounded-md ${viewMode === 'list' ? 'bg-teal-500 text-white' : 'bg-gray-200 text-gray-600'}`}><ViewListIcon className="h-5 w-5"/></button>
+            <div className="h-6 w-px bg-gray-300 mx-2"></div>
+            <button onClick={handleAddStudent} className="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-lg flex items-center"><PlusIcon className="h-5 w-5 mr-1"/> Añadir Alumno</button>
+            <button onClick={() => setIsImportModalOpen(true)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">Importar</button>
+             <div className="relative">
+                <button onClick={handleExportPdf} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-1">
+                    <DownloadIcon className="h-5 w-5"/> PDF
                 </button>
-                <button onClick={() => setViewMode('list')} className={`p-2 rounded-md ${viewMode === 'list' ? 'bg-white shadow' : ''}`} title="Vista de Lista">
-                    <ViewListIcon className={`h-5 w-5 ${viewMode === 'list' ? 'text-teal-600' : 'text-gray-500'}`} />
+            </div>
+             <div className="relative">
+                <button onClick={handleExportXlsx} className="bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-1">
+                    <DownloadIcon className="h-5 w-5"/> XLSX
                 </button>
             </div>
         </div>
       </div>
-
-        {viewMode === 'grid' ? (
-             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                {filteredStudents.map((student, index) => (
-                    <StudentCard 
-                        key={student.nre}
-                        student={student}
-                        index={index + 1}
-                        onSelect={() => setStudentToView(student)}
-                        onEdit={() => setStudentToEdit(student)}
-                        onDelete={() => handleDeleteStudent(student.nre)}
-                    />
-                ))}
-             </div>
-        ) : (
-            <StudentTable 
-                students={filteredStudents} 
-                onSelectStudent={setStudentToView}
-                onEditStudent={setStudentToEdit}
-                onDeleteStudent={handleDeleteStudent}
+      
+      {viewMode === 'grid' ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          {filteredStudents.map((student, index) => (
+            <StudentCard
+              key={student.nre}
+              student={student}
+              index={index + 1}
+              onSelect={() => handleSelectStudent(student)}
+              onEdit={() => handleEditStudent(student)}
+              onDelete={() => handleDeleteStudent(student.nre)}
             />
-        )}
-     
-      {isImporting && (
-        <ImportModal 
-          onClose={closeModals}
-          onSave={handleImportSave}
+          ))}
+        </div>
+      ) : (
+        <StudentTable
+          students={filteredStudents}
+          onSelectStudent={handleSelectStudent}
+          onEditStudent={handleEditStudent}
+          onDeleteStudent={handleDeleteStudent}
         />
       )}
-      {(studentToEdit || isAdding) && (
-        <AddEditStudentModal
-            student={studentToEdit} // if null, it's an "add" operation
-            onClose={closeModals}
-            onSave={handleSaveStudent}
-        />
-      )}
-       {studentToView && (
+      
+      {filteredStudents.length === 0 && <p className="text-center text-gray-500 mt-8">No se encontraron alumnos.</p>}
+
+      {isDetailModalOpen && selectedStudent && (
         <StudentDetailModal
-          student={studentToView}
+          student={selectedStudent}
           evaluations={evaluations}
           practicalExams={practicalExams}
           academicGrades={academicGrades}
-          onClose={() => setStudentToView(null)}
-          onEdit={(s) => {
-            setStudentToView(null);
-            setStudentToEdit(s);
+          courseGrades={courseGrades}
+          onClose={() => setIsDetailModalOpen(false)}
+          onEdit={(student) => {
+            setIsDetailModalOpen(false);
+            handleEditStudent(student);
           }}
-          onUpdateStudent={handleUpdateStudent}
+          onUpdateStudent={handleUpdateStudentData}
+        />
+      )}
+
+      {isImportModalOpen && (
+        <ImportModal
+          onClose={() => setIsImportModalOpen(false)}
+          onSave={handleImportSave}
+        />
+      )}
+
+      {isAddEditModalOpen && (
+        <AddEditStudentModal
+          student={studentToEdit}
+          onClose={() => setIsAddEditModalOpen(false)}
+          onSave={handleSaveStudent}
         />
       )}
     </div>

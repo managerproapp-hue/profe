@@ -5,18 +5,12 @@ export interface Interview {
   notes: string;
 }
 
-export interface Grade {
-  subject: string;
-  score: number;
-}
-
 export interface Annotation {
   id: string;
   date: string;
   note: string;
   type: 'positive' | 'negative' | 'neutral';
 }
-
 
 export interface Student {
   nre: string;
@@ -33,7 +27,6 @@ export interface Student {
   emailOficial: string;
   photoUrl?: string;
   entrevistas?: Interview[];
-  calificaciones?: Grade[];
   anotaciones?: Annotation[];
 }
 
@@ -53,6 +46,7 @@ export type NavItemType =
   | 'Gestión de Notas' 
   | 'Exámenes Prácticos'
   | 'Gestión Académica'
+  | 'Notas del Curso'
   | 'Cocina'
   | 'Gestión de la App';
 
@@ -192,3 +186,14 @@ export interface TheoreticalExamGrades {
   examen4?: number;
   recuperacion?: number;
 }
+
+// --- NOTAS DEL CURSO TYPES ---
+export interface CourseModuleGrades {
+  t1?: number;
+  t2?: number;
+  rec?: number;
+}
+
+export type CourseGrades = {
+  [moduleKey: string]: CourseModuleGrades;
+};

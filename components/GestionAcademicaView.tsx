@@ -110,6 +110,9 @@ const GestionAcademicaView: React.FC<GestionAcademicaViewProps> = ({
             const examT2 = practicalExams.find(e => e.studentNre === student.nre && e.examType === 'T2');
             grades['exPractico2'] = examT2?.finalScore ?? null;
 
+            const examRec = practicalExams.find(e => e.studentNre === student.nre && e.examType === 'REC');
+            grades['exPracticoRec'] = examRec?.finalScore ?? null;
+
             result[student.nre] = grades;
         });
         return result;
@@ -159,7 +162,9 @@ const GestionAcademicaView: React.FC<GestionAcademicaViewProps> = ({
                                 {trimestre.name}
                             </th>
                         ))}
-                         <th rowSpan={2} className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r">{ACADEMIC_EVALUATION_STRUCTURE.recuperacion.name}</th>
+                         <th colSpan={ACADEMIC_EVALUATION_STRUCTURE.recuperacion.instruments.length + 1} className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r">
+                            {ACADEMIC_EVALUATION_STRUCTURE.recuperacion.name}
+                        </th>
                     </tr>
                     <tr>
                          {ACADEMIC_EVALUATION_STRUCTURE.trimestres.map(trimestre => (
@@ -172,13 +177,19 @@ const GestionAcademicaView: React.FC<GestionAcademicaViewProps> = ({
                                 <th className="px-2 py-2 text-center text-xs font-bold text-teal-600 uppercase tracking-wider border-b border-r bg-teal-50 whitespace-nowrap">Media</th>
                             </React.Fragment>
                         ))}
+                        {ACADEMIC_EVALUATION_STRUCTURE.recuperacion.instruments.map(inst => (
+                            <th key={inst.key} className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r whitespace-nowrap">
+                                {inst.name} <span className="font-normal">({(inst.weight * 100).toFixed(0)}%)</span>
+                            </th>
+                        ))}
+                        <th className="px-2 py-2 text-center text-xs font-bold text-teal-600 uppercase tracking-wider border-b border-r bg-teal-50 whitespace-nowrap">Media REC</th>
                     </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                      {studentsByGroup.map(([groupName, groupStudents]) => (
                         <React.Fragment key={groupName}>
                             <tr>
-                                <td colSpan={12} className="sticky left-0 px-4 py-2 bg-gray-100 text-sm font-bold text-gray-700 z-10">{groupName}</td>
+                                <td colSpan={14} className="sticky left-0 px-4 py-2 bg-gray-100 text-sm font-bold text-gray-700 z-10">{groupName}</td>
                             </tr>
                             {groupStudents.map((student) => {
                                 const calculatedGrades = calculatedGradesByStudent[student.nre] || {};
@@ -187,6 +198,7 @@ const GestionAcademicaView: React.FC<GestionAcademicaViewProps> = ({
                                 return (
                                 <tr key={student.nre} className="hover:bg-gray-50">
                                     <td className="sticky left-0 bg-white hover:bg-gray-50 px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 z-10 border-r">{student.apellido1} {student.apellido2}, {student.nombre}</td>
+                                    {/* Trimestres */}
                                     {ACADEMIC_EVALUATION_STRUCTURE.trimestres.map(trimestre => {
                                         let weightedTotal = 0;
                                         let totalWeight = 0;
@@ -223,15 +235,43 @@ const GestionAcademicaView: React.FC<GestionAcademicaViewProps> = ({
                                         );
                                         return cells;
                                     })}
-                                    <td className="px-2 py-2 text-center text-sm border-r">
-                                        <input 
-                                            type="number"
-                                            defaultValue={theoreticalGrades.recuperacion ?? ''}
-                                            onBlur={(e) => handleGradeChange(student.nre, 'recuperacion', e.target.value)}
-                                            min="0" max="10" step="0.01"
-                                            className={`w-20 p-1 border rounded-md text-center bg-gray-50 focus:bg-white focus:ring-1 focus:ring-teal-500 ${theoreticalGrades.recuperacion !== undefined ? getGradeColor(theoreticalGrades.recuperacion) : ''}`}
-                                        />
-                                    </td>
+
+                                    {/* Recuperacion */}
+                                    {(() => {
+                                        let weightedTotalRec = 0;
+                                        let totalWeightRec = 0;
+                                        const recCells = ACADEMIC_EVALUATION_STRUCTURE.recuperacion.instruments.map(inst => {
+                                            const grade = inst.type === 'manual' ? theoreticalGrades[inst.key as keyof TheoreticalExamGrades] : calculatedGrades[inst.key];
+                                            if (typeof grade === 'number' && !isNaN(grade)) {
+                                                weightedTotalRec += grade * inst.weight;
+                                                totalWeightRec += inst.weight;
+                                            }
+                                            return (
+                                                <td key={inst.key} className="px-2 py-2 text-center text-sm border-r">
+                                                    {inst.type === 'manual' ? (
+                                                        <input 
+                                                            type="number"
+                                                            defaultValue={grade ?? ''}
+                                                            onBlur={(e) => handleGradeChange(student.nre, inst.key as keyof TheoreticalExamGrades, e.target.value)}
+                                                            min="0" max="10" step="0.01"
+                                                            className={`w-20 p-1 border rounded-md text-center bg-gray-50 focus:bg-white focus:ring-1 focus:ring-teal-500 ${grade !== undefined ? getGradeColor(grade) : ''}`}
+                                                        />
+                                                    ) : (
+                                                        <span className={`font-semibold ${grade !== null && grade !== undefined ? getGradeColor(grade) : 'text-gray-400'}`}>
+                                                            {grade !== null && grade !== undefined ? grade.toFixed(2) : 'N/A'}
+                                                        </span>
+                                                    )}
+                                                </td>
+                                            );
+                                        });
+                                        const recAverage = totalWeightRec > 0 ? weightedTotalRec / totalWeightRec : 0;
+                                        recCells.push(
+                                            <td key="rec-avg" className={`px-2 py-2 text-center text-sm font-bold border-r bg-teal-50 ${getGradeColor(recAverage)}`}>
+                                                {recAverage.toFixed(2)}
+                                            </td>
+                                        );
+                                        return recCells;
+                                    })()}
                                 </tr>
                                 );
                             })}

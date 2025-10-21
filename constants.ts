@@ -19,13 +19,6 @@ export const INITIAL_STUDENTS: Student[] = [
         { id: 'ent1', date: '2024-03-15', attendees: 'Tutor, Ana García', notes: 'Revisión del progreso del primer trimestre. Muestra gran interés en desarrollo backend.' },
         { id: 'ent2', date: '2024-05-20', attendees: 'Tutor', notes: 'Seguimiento sobre el proyecto final. Necesita organizar mejor sus tiempos.' }
     ],
-    calificaciones: [
-        { subject: 'Programación', score: 8.5 },
-        { subject: 'Bases de Datos', score: 9.2 },
-        { subject: 'Sistemas Informáticos', score: 7.0 },
-        { subject: 'Lenguajes de Marcas', score: 10.0 },
-        { subject: 'Entornos de Desarrollo', score: 6.5 },
-    ],
     anotaciones: [
         { id: 'ann1', date: '2024-04-10', note: 'Excelente participación en el debate sobre arquitecturas limpias.', type: 'positive' },
         { id: 'ann2', date: '2024-05-22', note: 'Llegó tarde a la presentación del proyecto.', type: 'negative' },
@@ -46,11 +39,6 @@ export const INITIAL_STUDENTS: Student[] = [
     emailPersonal: 'carlos.martinez@email.com',
     emailOficial: 'carlos.martinez@edu.es',
     photoUrl: `https://i.pravatar.cc/150?u=carlos.martinez`,
-    calificaciones: [
-        { subject: 'Programación', score: 6.0 },
-        { subject: 'Bases de Datos', score: 5.5 },
-        { subject: 'Sistemas Informáticos', score: 4.8 },
-    ],
     anotaciones: [
          { id: 'ann4', date: '2024-05-15', note: 'Presenta dificultades con las consultas SQL complejas.', type: 'negative' },
     ]
@@ -69,10 +57,6 @@ export const INITIAL_STUDENTS: Student[] = [
     emailPersonal: 'laura.sanchez@email.com',
     emailOficial: 'laura.sanchez@edu.es',
     photoUrl: `https://i.pravatar.cc/150?u=laura.sanchez`,
-    calificaciones: [
-      { subject: 'Redes Locales', score: 9.5 },
-      { subject: 'Sistemas Operativos', score: 8.0 },
-    ],
     anotaciones: [
        { id: 'ann5', date: '2024-06-05', note: 'Muy proactiva ayudando a sus compañeros con la configuración de la red.', type: 'positive' },
     ]
@@ -85,8 +69,19 @@ export const NAV_ITEMS: NavItemType[] = [
   'Gestión de Notas',
   'Exámenes Prácticos',
   'Gestión Académica',
+  'Notas del Curso',
   'Cocina',
   'Gestión de la App',
+];
+
+export const COURSE_MODULES = [
+    { key: 'ofertas_gastronomicas', name: 'Ofertas gastronómicas' },
+    { key: 'productos_culinarios', name: 'Productos culinarios' },
+    { key: 'postres_restauracion', name: 'Postres en restauración' },
+    { key: 'empleabilidad_2', name: 'Itinerario personal para la Empleabilidad II' },
+    { key: 'proyecto_intermodular', name: 'Proyecto Intermodular' },
+    { key: 'sostenibilidad', name: 'Sostenibilidad aplicada al sistema productivo' },
+    { key: 'optativa', name: 'Optativa' },
 ];
 
 export const GROUP_EVALUATION_ITEMS = [
@@ -233,8 +228,10 @@ export const ACADEMIC_EVALUATION_STRUCTURE = {
   ],
   recuperacion: {
     name: "Recuperación",
-    type: "manual",
-    key: "recuperacion"
+    instruments: [
+      { name: "Ex. Teorico REC", type: "manual", key: "recuperacion", weight: 0.50 },
+      { name: "Ex. Practico REC", type: "calculated", key: "exPracticoRec", weight: 0.50 },
+    ]
   }
 };
 

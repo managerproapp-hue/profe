@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import AlumnosView from './components/AlumnosView';
 import Login from './components/Login';
-import { Student, NavItemType, EvaluationsState, StudentPracticalExam, TheoreticalExamGrades } from './types';
+import { Student, NavItemType, EvaluationsState, StudentPracticalExam, TheoreticalExamGrades, CourseGrades } from './types';
 import { INITIAL_STUDENTS } from './constants';
 import GestionPracticaView from './components/GestionPracticaView';
 import CocinaView from './components/CocinaView';
@@ -10,6 +10,7 @@ import GestionAppView from './components/GestionAppView';
 import GestionNotasView from './components/GestionNotasView';
 import ExamenesPracticosView from './components/ExamenesPracticosView';
 import GestionAcademicaView from './components/GestionAcademicaView';
+import NotasCursoView from './components/NotasCursoView';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -54,6 +55,16 @@ const App: React.FC = () => {
     }
   });
 
+  const [courseGrades, setCourseGrades] = useState<{[nre: string]: CourseGrades}>(() => {
+    try {
+      const saved = localStorage.getItem('teacher-dashboard-course-grades');
+      return saved ? JSON.parse(saved) : {};
+    } catch (error) {
+      console.error("Could not parse course grades from localStorage", error);
+      return {};
+    }
+  });
+
   useEffect(() => {
     localStorage.setItem('teacher-dashboard-students', JSON.stringify(students));
   }, [students]);
@@ -69,6 +80,10 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('teacher-dashboard-academic-grades', JSON.stringify(academicGrades));
   }, [academicGrades]);
+  
+  useEffect(() => {
+    localStorage.setItem('teacher-dashboard-course-grades', JSON.stringify(courseGrades));
+  }, [courseGrades]);
 
 
   const renderView = () => {
@@ -80,6 +95,7 @@ const App: React.FC = () => {
                   evaluations={evaluations} 
                   practicalExams={practicalExams}
                   academicGrades={academicGrades}
+                  courseGrades={courseGrades}
                 />;
       case 'Gestión Práctica':
         return <GestionPracticaView students={students} />;
@@ -107,6 +123,12 @@ const App: React.FC = () => {
                   academicGrades={academicGrades}
                   setAcademicGrades={setAcademicGrades}
                 />;
+      case 'Notas del Curso':
+        return <NotasCursoView
+                  students={students}
+                  courseGrades={courseGrades}
+                  setCourseGrades={setCourseGrades}
+                />;
       default:
         return <AlumnosView 
                   students={students} 
@@ -114,6 +136,7 @@ const App: React.FC = () => {
                   evaluations={evaluations} 
                   practicalExams={practicalExams}
                   academicGrades={academicGrades}
+                  courseGrades={courseGrades}
                 />;
     }
   };

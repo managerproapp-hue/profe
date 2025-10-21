@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Student, Grade, Annotation, Interview } from '../types';
+import { Student, Annotation, Interview } from '../types';
 import { BackIcon, PlusIcon, PencilIcon } from './icons';
 
 interface StudentDetailViewProps {
@@ -7,13 +7,6 @@ interface StudentDetailViewProps {
   onBack: () => void;
   onUpdateStudent: (student: Student) => void;
 }
-
-const getGradeColor = (score: number) => {
-  if (score >= 9) return 'bg-green-100 text-green-800';
-  if (score >= 7) return 'bg-green-100 text-green-800';
-  if (score >= 5) return 'bg-orange-100 text-orange-800';
-  return 'bg-red-100 text-red-800';
-};
 
 const getAnnotationColor = (type: 'positive' | 'negative' | 'neutral') => {
   switch (type) {
@@ -27,12 +20,6 @@ const StudentDetailView: React.FC<StudentDetailViewProps> = ({ student, onBack, 
   const [localStudent, setLocalStudent] = useState<Student>(student);
   const [isAddingInterview, setIsAddingInterview] = useState(false);
   const [newInterview, setNewInterview] = useState({ date: '', attendees: '', notes: '' });
-
-  const averageGrade = useMemo(() => {
-    if (!localStudent.calificaciones || localStudent.calificaciones.length === 0) return 'N/A';
-    const total = localStudent.calificaciones.reduce((sum, grade) => sum + grade.score, 0);
-    return (total / localStudent.calificaciones.length).toFixed(2);
-  }, [localStudent.calificaciones]);
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -87,10 +74,6 @@ const StudentDetailView: React.FC<StudentDetailViewProps> = ({ student, onBack, 
               <h1 className="text-3xl font-bold text-gray-800">{localStudent.nombre} {localStudent.apellido1} {localStudent.apellido2}</h1>
               <p className="text-gray-500">{localStudent.emailOficial}</p>
             </div>
-            <div className="text-center">
-              <p className="text-sm text-gray-500">Nota Media</p>
-              <p className="text-4xl font-bold text-teal-600">{averageGrade}</p>
-            </div>
           </div>
 
           {/* Datos Personales */}
@@ -139,18 +122,6 @@ const StudentDetailView: React.FC<StudentDetailViewProps> = ({ student, onBack, 
 
         {/* Columna lateral */}
         <div className="space-y-8">
-          {/* Calificaciones */}
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <h2 className="text-xl font-bold mb-4 text-gray-700">Calificaciones</h2>
-            <ul className="space-y-2">
-              {localStudent.calificaciones?.map(grade => (
-                <li key={grade.subject} className="flex justify-between items-center text-sm">
-                  <span>{grade.subject}</span>
-                  <span className={`px-2 py-1 rounded-full font-bold text-xs ${getGradeColor(grade.score)}`}>{grade.score.toFixed(1)}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
           {/* Anotaciones */}
           <div className="bg-white p-6 rounded-lg shadow-lg">
             <h2 className="text-xl font-bold mb-4 text-gray-700">Anotaciones</h2>
