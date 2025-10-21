@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Student, StudentPracticalExam, ExamType } from '../types';
 import { PRACTICAL_EXAM_RUBRIC_T1, PRACTICAL_EXAM_RUBRIC_T2, SCORE_LEVELS } from '../constants';
+import { TrashIcon, CheckIcon } from './icons';
 
 interface ExamenesPracticosViewProps {
   students: Student[];
@@ -48,6 +49,9 @@ const ExamenesPracticosView: React.FC<ExamenesPracticosViewProps> = ({ students,
     const [activeTab, setActiveTab] = useState<ExamType>('T1');
     const [selectedStudentNre, setSelectedStudentNre] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    
+    type SaveStatus = 'idle' | 'saving' | 'saved';
+    const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
 
     const sortedStudents = useMemo(() => {
         return [...students].sort((a, b) =>
@@ -94,6 +98,7 @@ const ExamenesPracticosView: React.FC<ExamenesPracticosViewProps> = ({ students,
     }, [exams, selectedStudentNre, activeTab]);
 
     const updateExamData = useCallback((studentNre: string, examType: ExamType, updates: Partial<StudentPracticalExam>) => {
+        setSaveStatus('idle'); // Any change makes it "unsaved"
         setExams(prevExams => {
             const existingExamIndex = prevExams.findIndex(e => e.studentNre === studentNre && e.examType === examType);
             let newExams = [...prevExams];
@@ -121,6 +126,31 @@ const ExamenesPracticosView: React.FC<ExamenesPracticosViewProps> = ({ students,
         }
         updateExamData(selectedStudentNre, activeTab, { scores: newScores });
     }, [selectedStudentNre, activeTab, studentExam, updateExamData]);
+    
+    const handleClearSection = useCallback((raId: string) => {
+        if (!selectedStudentNre || !studentExam) return;
+
+        const sectionToClear = activeRubric.find(ra => ra.id === raId);
+        if (!sectionToClear) return;
+        
+        if (window.confirm(`¿Estás seguro de que quieres borrar todas las notas y observaciones de la sección "${sectionToClear.title}"?`)) {
+            const criteriaIdsToClear = new Set(sectionToClear.criteria.map((c: any) => c.id));
+            const newScores = studentExam.scores.filter(s => !criteriaIdsToClear.has(s.criterionId));
+            updateExamData(selectedStudentNre, activeTab, { scores: newScores });
+        }
+    }, [selectedStudentNre, studentExam, activeRubric, activeTab, updateExamData]);
+
+    const handleSaveExam = useCallback(() => {
+        if (!selectedStudentNre) return;
+        setSaveStatus('saving');
+        // The actual save is handled by setExams -> useEffect in App.tsx. This is for UI feedback.
+        setTimeout(() => {
+            setSaveStatus('saved');
+            setTimeout(() => {
+                setSaveStatus('idle');
+            }, 2000); // Reset after 2 seconds
+        }, 500); // Simulate save delay
+    }, [selectedStudentNre]);
 
     const calculateFinalScore = useCallback((exam: StudentPracticalExam | undefined, rubric: any[]) => {
         if (!exam || !rubric) return 0;
@@ -220,18 +250,47 @@ const ExamenesPracticosView: React.FC<ExamenesPracticosViewProps> = ({ students,
                 <main className="w-full md:w-2/3 lg:w-3/4">
                     {selectedStudent ? (
                         <div className="bg-white p-6 rounded-lg shadow-md">
-                            <div className="flex justify-between items-center mb-4 pb-4 border-b">
+                            <div className="flex justify-between items-start mb-4 pb-4 border-b">
                                 <h2 className="text-2xl font-bold text-gray-800">{selectedStudent.nombre} {selectedStudent.apellido1}</h2>
-                                <div className="text-right">
-                                    <p className="text-sm text-gray-500">Nota Final</p>
-                                    <p className="text-3xl font-bold text-teal-600">{finalScore.toFixed(2)}</p>
+                                <div className="flex items-center gap-4">
+                                    {saveStatus === 'idle' && (
+                                        <button onClick={handleSaveExam} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                                            Guardar Examen
+                                        </button>
+                                    )}
+                                    {saveStatus === 'saving' && (
+                                        <button disabled className="bg-gray-400 text-white font-bold py-2 px-4 rounded-lg cursor-wait">
+                                            Guardando...
+                                        </button>
+                                    )}
+                                    {saveStatus === 'saved' && (
+                                        <div className="flex items-center gap-1 text-green-600 font-semibold bg-green-100 py-2 px-4 rounded-lg">
+                                            <CheckIcon className="h-5 w-5"/>
+                                            ¡Guardado!
+                                        </div>
+                                    )}
+                                    <div className="text-right">
+                                        <p className="text-sm text-gray-500">Nota Final</p>
+                                        <p className="text-3xl font-bold text-teal-600">{finalScore.toFixed(2)}</p>
+                                    </div>
                                 </div>
                             </div>
                             <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-4">
                                 {activeRubric.map(ra => (
                                     <details key={ra.id} open className="bg-gray-50 p-3 rounded-lg border">
-                                        <summary className="font-bold text-lg text-gray-700 cursor-pointer">
-                                            {ra.title} ({ra.weight * 100}%)
+                                        <summary className="font-bold text-lg text-gray-700 cursor-pointer flex justify-between items-center">
+                                            <span>{ra.title} ({ra.weight * 100}%)</span>
+                                             <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    handleClearSection(ra.id);
+                                                }}
+                                                className="text-gray-400 hover:text-red-600 p-1 rounded-full"
+                                                title={`Borrar notas de ${ra.title}`}
+                                            >
+                                                <TrashIcon className="h-5 w-5" />
+                                            </button>
                                         </summary>
                                         <div className="mt-3 pt-3 border-t">
                                             {ra.criteria.map((crit: any) => (
