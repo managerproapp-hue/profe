@@ -326,40 +326,46 @@ const RecipeFormView: React.FC<{
     const handleDownloadRecipe = () => {
         let html = `
             ${formData.imageUrl ? `<div style="text-align: center; margin-bottom: 1.5rem;"><img src="${formData.imageUrl}" alt="${formData.name}" style="max-width: 100%; max-height: 300px; height: auto; display: inline-block; border-radius: 0.5rem;" /></div>` : ''}
-            <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #eee; padding-bottom: 1rem; margin-bottom: 1.5rem;">
-                <div>
-                    <p style="font-size: 0.875rem; color: #4f46e5; font-weight: 600;">${formData.category}</p>
-                    <h2 style="font-size: 2.25rem; font-weight: bold; margin: 0;">${formData.name}</h2>
-                </div>
-                <p style="font-size: 1.125rem; font-weight: 600;">Para ${formData.servings} raciones</p>
-            </div>
             
-            ${formData.description ? `<div style="margin-bottom: 1.5rem;">
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                <tr>
+                    <td style="vertical-align: bottom; padding: 0;">
+                        <p style="font-size: 0.875rem; color: #4f46e5; font-weight: 600; margin: 0;">${formData.category}</p>
+                        <h2 style="font-size: 2.25rem; font-weight: bold; margin: 0; line-height: 1.1;">${formData.name}</h2>
+                    </td>
+                    <td style="vertical-align: bottom; text-align: right; padding: 0;">
+                        <p style="font-size: 1.125rem; font-weight: 600; margin: 0;">Para ${formData.servings} raciones</p>
+                    </td>
+                </tr>
+            </table>
+            <div style="height: 1px; background-color: #eee; margin-bottom: 20px;"></div>
+            
+            ${formData.description ? `<div style="margin-bottom: 1.5rem; page-break-inside: avoid;">
                 <h3 style="font-size: 1.25rem; font-weight: bold; border-bottom: 1px solid #ddd; padding-bottom: 0.5rem; margin-bottom: 0.75rem;">Descripción</h3>
-                <p style="color: #4b5563;">${formData.description}</p>
+                <p style="color: #4b5563;">${formData.description.replace(/\n/g, '<br>')}</p>
             </div>` : ''}
         `;
     
         html += formData.elaborations.map(elab => `
-            <div style="break-inside: avoid; page-break-inside: avoid; margin-bottom: 2rem;">
+            <div style="page-break-inside: avoid; margin-bottom: 2rem;">
                 <h3 style="font-size: 1.5rem; font-weight: bold; color: #166534; background-color: #f0fdf4; padding: 0.5rem 1rem; border-left: 4px solid #22c55e; border-radius: 0.25rem;">${elab.name}</h3>
                 <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
                     <tr style="vertical-align: top;">
-                        <td style="width: 40%; padding-right: 1rem; border-right: 1px solid #eee;">
-                            <h4 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.75rem;">Ingredientes</h4>
-                            <table style="width: 100%; font-size: 0.875rem;">
+                        <td style="width: 40%; padding-right: 15px;">
+                            <h4 style="font-size: 1.125rem; font-weight: 600; margin-top: 0; margin-bottom: 0.75rem;">Ingredientes</h4>
+                            <table style="width: 100%; font-size: 0.875rem; border-collapse: collapse;">
                                 ${elab.ingredients.map(ing => {
                                     const p = products.find(prod => prod.id === ing.productId);
                                     return `<tr>
-                                        <td style="padding: 0.5rem 0; border-bottom: 1px solid #f3f4f6;">${p?.name || 'N/A'}</td>
-                                        <td style="padding: 0.5rem 0; border-bottom: 1px solid #f3f4f6; text-align: right; font-weight: 500; white-space: nowrap;">${ing.quantity.toFixed(2)} ${ing.unit}</td>
+                                        <td style="padding: 0.5rem 0.25rem; border-bottom: 1px solid #f3f4f6;">${p?.name || 'N/A'}</td>
+                                        <td style="padding: 0.5rem 0.25rem; border-bottom: 1px solid #f3f4f6; text-align: right; font-weight: 500; white-space: nowrap;">${ing.quantity.toFixed(2)} ${ing.unit}</td>
                                     </tr>`;
                                 }).join('')}
                             </table>
                         </td>
-                        <td style="width: 60%; padding-left: 1rem;">
-                            <h4 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.75rem;">Pasos</h4>
-                            <ol style="padding-left: 1.25rem; margin: 0;">
+                        <td style="width: 60%; padding-left: 15px; border-left: 1px solid #eee;">
+                            <h4 style="font-size: 1.125rem; font-weight: 600; margin-top: 0; margin-bottom: 0.75rem;">Pasos</h4>
+                            <ol style="padding-left: 1.25rem; margin: 0; font-size: 0.875rem;">
                                 ${elab.steps.map(step => `<li style="margin-bottom: 0.75rem; color: #374151; line-height: 1.5;">${step.description}</li>`).join('')}
                             </ol>
                         </td>
@@ -369,9 +375,9 @@ const RecipeFormView: React.FC<{
         `).join('');
     
          if (formData.serviceNotes) {
-            html += `<div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #eee;">
+            html += `<div style="page-break-inside: avoid; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #eee;">
                 <h3 style="font-size: 1.25rem; font-weight: bold; margin-bottom: 0.75rem;">Notas de Servicio</h3>
-                <p style="color: #4b5563;">${formData.serviceNotes}</p>
+                <p style="color: #4b5563;">${formData.serviceNotes.replace(/\n/g, '<br>')}</p>
             </div>`;
          }
     
