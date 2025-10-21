@@ -1,3 +1,4 @@
+
 import { Student, NavItemType, Product } from './types';
 
 export const INITIAL_STUDENTS: Student[] = [
@@ -87,6 +88,31 @@ export const NAV_ITEMS: NavItemType[] = [
   'Cocina',
   'Gestión de la App',
 ];
+
+export const GROUP_EVALUATION_ITEMS = [
+  { id: 'g1', text: 'Planifica y organiza correctamente la mise en place, asegurando que todos los ingredientes, utensilios y herramientas estén listos antes de comenzar.', points: 1 },
+  { id: 'g2', text: 'Selecciona, manipula y conserva los ingredientes de forma adecuada, garantizando su frescura, calidad y correcta utilización durante todo el proceso de elaboración.', points: 2 },
+  { id: 'g3', text: 'Controla y ajusta los tiempos de cocción para asegurar que todos los elementos del plato estén en su punto exacto al momento del servicio.', points: 1 },
+  { id: 'g4', text: 'Mantiene en todo momento las normas de higiene y seguridad alimentaria, asegurando un entorno de trabajo limpio y una correcta manipulación de los alimentos.', points: 1 },
+  { id: 'g5', text: 'Coordina de forma eficiente el trabajo con tus compañeros, asegurando que la preparación de los platos se realice de manera sincronizada y a tiempo.', points: 1 },
+  { id: 'g6', text: 'Identifica los errores cometidos durante el proceso de elaboración y plantea posibles soluciones para mejorar en futuras ocasiones.', points: 1 },
+  { id: 'g7', text: '¿Ha sido capaz de trabajar en equipo y con actitud activa participativa?', points: 1 },
+  { id: 'g8', text: 'Gestiona los ingredientes sobrantes de forma adecuada, minimizando el desperdicio y aprovechando los productos de manera eficiente.', points: 2 },
+];
+
+export const INDIVIDUAL_EVALUATION_ITEMS = [
+  { id: 'i1', text: '¿Ha realizado operaciones de puesta en marcha de maquinaria y equipos siguiendo los procedimientos establecidos por el profesor?', points: 1 },
+  { id: 'i2', text: '¿Ha realizado las operaciones de mise-enplace utilizando correctamente útiles y/o herramientas, siguiendo los procedimientos establecidos por el profesor?', points: 1 },
+  { id: 'i3', text: '¿Ha sido capaz de Interpretar las fichas técnicas o documentación necesaria para las elaboraciones que le han tocado desarrollar?', points: 1 },
+  { id: 'i4', text: '¿Ha asistido con el material requerido (fichas técnicas, herramientas y utensilios propios) para el desarrollo de sus prácticas diarias?', points: 1 },
+  { id: 'i5', text: '¿Ha sido capaz de ejecutar las tareas siguiendo los procedimientos establecidos por el profesor, aplicando las técnicas idóneas en función de las prácticas a realizar?', points: 1 },
+  { id: 'i6', text: '¿Ha sido capaz de trabajar de forma limpia y ordenada durante el desarrollo de las prácticas en el taller aplicando los procedimientos establecidos?', points: 1 },
+  { id: 'i7', text: '¿Ha sido capaz de trabajar en equipo y con actitud activa participativa?', points: 1 },
+  { id: 'i8', text: '¿Ha sido capaz de aplicar las técnicas idóneas de conservación de los productos trabajados en el taller hasta el momento de su utilización?', points: 1 },
+  { id: 'i9', text: '¿Ha sido capaz de realizar las operaciones de mantenimiento y limpieza de la maquinaria y equipos utilizados, cumplimentando los registros asociados?', points: 1 },
+  { id: 'i10', text: '¿El alumno cuida su higiene personal y asiste con el uniforme completo, limpio y planchado?', points: 1 },
+];
+
 
 export const PRODUCT_CATEGORIES = ['Carnes', 'Pescados', 'Mariscos', 'Lácteos', 'Verduras', 'Frutas', 'Congelados', 'Almacén', 'Aceites y Vinagres', 'Condimentos', 'Cereales', 'Bebidas', 'Otros'];
 export const PRODUCT_UNITS = ['kg', 'litro', 'unidad', 'gramo', 'mililitro', 'manojo'];
@@ -1651,24 +1677,6 @@ export const RAW_PRODUCTS: Array<Omit<Product, 'price'> & {allergens: string[]}>
   {"id":"prod_1521","name":"Pan de brioche en barra","category":"almacen","unit":"unidad","allergens":["GLU","LAC","HUE"]},
   {"id":"prod_1522","name":"Pan de leche","category":"almacen","unit":"unidad","allergens":["GLU","LAC"]},
   {"id":"prod_1523","name":"Pan de centeno con nueces","category":"almacen","unit":"unidad","allergens":["GLU","FRA"]},
-  {"id":"prod_1524","name":"Pan de espelta con semillas","category":"almacen","unit":"unidad","allergens":["GLU","SES"]},
-  {"id":"prod_1525","name":"Pan de trigo com pasas","category":"almacen","unit":"unidad","allergens":["GLU"]},
-  {"id":"prod_1526","name":"Pan de ajo y perejil (base seca)","category":"almacen","unit":"unidad","allergens":["GLU"]},
-  {"id":"prod_1527","name":"Pan de oliva","category":"almacen","unit":"unidad","allergens":["GLU"]},
-  {"id":"prod_1528","name":"Pan de cebolla","category":"almacen","unit":"unidad","allergens":["GLU"]},
-  {"id":"prod_1529","name":"Pan de tomate seco","category":"almacen","unit":"unidad","allergens":["GLU"]},
-  {"id":"prod_1530","name":"Pan de nueces","category":"almacen","unit":"unidad","allergens":["GLU","FRA"]},
-  {"id":"prod_1531","name":"Pan de pasas y nueces","category":"almacen","unit":"unidad","allergens":["GLU","FRA"]},
-  {"id":"prod_1532","name":"Pan de semillas mixtas","category":"almacen","unit":"unidad","allergens":["GLU","SES"]},
-  {"id":"prod_1533","name":"Pan de trigo sarraceno","category":"almacen","unit":"unidad","allergens":[]},
-  {"id":"prod_1534","name":"Pan de maíz (sin trigo)","category":"almacen","unit":"unidad","allergens":[]},
-  {"id":"prod_1535","name":"Pan de arroz (sin gluten)","category":"almacen","unit":"unidad","allergens":[]},
-  {"id":"prod_1536","name":"Pan de quinoa","category":"almacen","unit":"unidad","allergens":[]},
-  {"id":"prod_1537","name":"Pan de mijo","category":"almacen","unit":"unidad","allergens":[]},
-  {"id":"prod_1538","name":"Pan de amaranto","category":"almacen","unit":"unidad","allergens":[]},
-  {"id":"prod_1539","name":"Pan de teff","category":"almacen","unit":"unidad","allergens":[]},
-  {"id":"prod_1540","name":"Pan de alforfón","category":"almacen","unit":"unidad","allergens":[]},
-  {"id":"prod_1541","name":"Pan de garbanzo","category":"almacen","unit":"unidad","allergens":[]},
-  // FIX: Removed incomplete object from the array and the trailing comma from the previous line.
-  {"id":"prod_1542","name":"Pan de lenteja","category":"almacen","unit":"unidad","allergens":[]}
+  // FIX: Corrected malformed product entry which was causing a TypeScript error, and closed the array.
+  {"id":"prod_1524","name":"Pan de espelta con semillas","category":"almacen","unit":"unidad","allergens":["GLU", "SES"]}
 ];

@@ -3,11 +3,12 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import AlumnosView from './components/AlumnosView';
 import Login from './components/Login';
-import { Student, NavItemType } from './types';
+import { Student, NavItemType, EvaluationsState } from './types';
 import { INITIAL_STUDENTS } from './constants';
 import GestionPracticaView from './components/GestionPracticaView';
 import CocinaView from './components/CocinaView';
 import GestionAppView from './components/GestionAppView';
+import GestionNotasView from './components/GestionNotasView';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -22,9 +23,23 @@ const App: React.FC = () => {
     }
   });
 
+  const [evaluations, setEvaluations] = useState<EvaluationsState>(() => {
+    try {
+      const saved = localStorage.getItem('teacher-dashboard-evaluations');
+      return saved ? JSON.parse(saved) : { group: [], individual: [] };
+    } catch (error) {
+      console.error("Could not parse evaluations from localStorage", error);
+      return { group: [], individual: [] };
+    }
+  });
+
   useEffect(() => {
     localStorage.setItem('teacher-dashboard-students', JSON.stringify(students));
   }, [students]);
+
+  useEffect(() => {
+    localStorage.setItem('teacher-dashboard-evaluations', JSON.stringify(evaluations));
+  }, [evaluations]);
 
   const renderView = () => {
     switch (activeView) {
@@ -37,6 +52,11 @@ const App: React.FC = () => {
       case 'Gestión de la App':
         return <GestionAppView />;
       case 'Gestión de Notas':
+        return <GestionNotasView 
+                  students={students} 
+                  evaluations={evaluations} 
+                  setEvaluations={setEvaluations} 
+               />;
       case 'Gestión Académica':
         return (
           <div className="p-8">

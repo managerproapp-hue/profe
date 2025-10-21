@@ -1,3 +1,4 @@
+
 export interface Interview {
   id: string;
   date: string;
@@ -118,6 +119,9 @@ export interface Service {
   menu?: string;
 }
 
+export type StudentGroupAssignments = Record<string, string>; // { [studentNre]: groupName }
+
+
 // --- CREACIÓN DE MENÚS TYPES ---
 
 export interface MenuApartado {
@@ -132,4 +136,31 @@ export interface Menu {
 
 export interface MenusState {
   [serviceId: string]: Menu;
+}
+
+
+// --- GESTIÓN DE NOTAS TYPES ---
+export interface EvaluationItemScore {
+  itemId: string;
+  score: number;
+}
+
+export interface GroupEvaluation {
+  serviceId: string;
+  groupId: string; // The name of the practica group, e.g., "Grupo 1"
+  scores: EvaluationItemScore[];
+  observation: string;
+}
+
+export interface IndividualEvaluation {
+  serviceId: string;
+  studentNre: string;
+  attendance: 'present' | 'absent';
+  scores: EvaluationItemScore[];
+  observation?: string;
+}
+
+export interface EvaluationsState {
+  group: GroupEvaluation[];
+  individual: IndividualEvaluation[];
 }
