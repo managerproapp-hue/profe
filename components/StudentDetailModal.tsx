@@ -1,6 +1,8 @@
 import React, { useMemo, useCallback } from 'react';
 import { Student, EvaluationsState, Service, StudentGroupAssignments, EvaluationItemScore } from '../types';
 import { CloseIcon, PencilIcon } from './icons';
+import { GROUP_EVALUATION_ITEMS, INDIVIDUAL_EVALUATION_ITEMS } from '../constants';
+
 
 // Helper function to safely parse JSON from localStorage
 const safeJsonParse = <T,>(key: string, defaultValue: T): T => {
@@ -67,14 +69,14 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({ student,
         const indEval = evaluations.individual.find(e => e.serviceId === service.id && e.studentNre === student.nre);
 
         if (!indEval || indEval.attendance === 'absent') {
-            return { group: null, individual: null, total: null, status: 'Ausente' };
+            return { group: null, individual: null, total: null, status: 'Ausente', groupEval: null, indEval: null };
         }
 
         const groupScore = groupEval ? calculateScore(groupEval.scores) : 0;
         const indScore = indEval ? calculateScore(indEval.scores) : 0;
         const total = groupScore + indScore;
 
-        return { group: groupScore, individual: indScore, total, status: 'Evaluado' };
+        return { group: groupScore, individual: indScore, total, status: 'Evaluado', groupEval, indEval };
     }, [evaluations, student.nre, studentGroupAssignments]);
     
     return (
@@ -107,7 +109,7 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({ student,
                           </div>
                         <div className="bg-white p-6 rounded-lg shadow-sm">
                             <h3 className="text-xl font-bold text-gray-700 mb-4">Entrevistas y Tutorías</h3>
-                            <div className="space-y-4 max-h-48 overflow-y-auto">
+                            <div className="space-y-4 max-h-48 overflow-y-auto pr-2">
                                 {student.entrevistas?.length ? student.entrevistas.map(interview => (
                                     <details key={interview.id} className="p-3 bg-gray-50 rounded-md">
                                         <summary className="font-semibold cursor-pointer text-sm">{new Date(interview.date).toLocaleDateString()} - {interview.attendees}</summary>
@@ -119,24 +121,83 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({ student,
 
                         <div className="bg-white p-6 rounded-lg shadow-sm">
                             <h3 className="text-xl font-bold text-gray-700 mb-4">Evaluaciones de Prácticas</h3>
-                            <div className="space-y-2 max-h-72 overflow-y-auto">
+                            <div className="space-y-2 max-h-72 overflow-y-auto pr-2">
                                 {studentServices.length > 0 ? studentServices.map(service => {
                                     const scores = getEvaluationScoresForService(service);
                                     return (
-                                        <div key={service.id} className="flex justify-between items-center text-sm p-2 bg-gray-50 rounded">
-                                            <div>
-                                                <p className="font-semibold">{service.name}</p>
-                                                <p className="text-xs text-gray-500">{new Date(service.date).toLocaleDateString()}</p>
-                                            </div>
-                                            {scores.status === 'Ausente' ? (
-                                                <span className="text-xs font-bold text-red-700 bg-red-100 px-2 py-1 rounded-full">{scores.status}</span>
-                                            ) : (
-                                                <div className="text-right">
-                                                    <p className="font-bold text-lg">{scores.total?.toFixed(2)} / 20.00</p>
-                                                    <p className="text-xs text-gray-500">G: {scores.group?.toFixed(2)} + I: {scores.individual?.toFixed(2)}</p>
+                                        <details key={service.id} className="bg-gray-50 rounded-lg overflow-hidden border border-gray-200">
+                                            <summary className="p-3 flex justify-between items-center cursor-pointer hover:bg-gray-100">
+                                                 <div className="flex-1 flex justify-between items-center">
+                                                    <div className="text-sm">
+                                                        <p className="font-semibold text-gray-800">{service.name}</p>
+                                                        <p className="text-xs text-gray-500">{new Date(service.date).toLocaleDateString()}</p>
+                                                    </div>
+                                                    {scores.status === 'Ausente' ? (
+                                                        <span className="text-xs font-bold text-red-700 bg-red-100 px-2 py-1 rounded-full">{scores.status}</span>
+                                                    ) : (
+                                                        <div className="text-right">
+                                                            <p className="font-bold text-lg text-gray-800">{scores.total?.toFixed(2)} / 20.00</p>
+                                                            <p className="text-xs text-gray-500">G: {scores.group?.toFixed(2)} + I: {scores.individual?.toFixed(2)}</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </summary>
+                                            {scores.status !== 'Ausente' && (
+                                                <div className="p-4 border-t border-gray-200 bg-white text-sm space-y-4">
+                                                    {/* Group Evaluation Breakdown */}
+                                                    {scores.groupEval && (
+                                                        <div>
+                                                            <h5 className="font-semibold text-gray-700 mb-2">Evaluación Grupal Detallada</h5>
+                                                            <div className="space-y-2 bg-gray-50 p-3 rounded-md border">
+                                                                {GROUP_EVALUATION_ITEMS.map(item => {
+                                                                    const score = scores.groupEval?.scores.find(s => s.itemId === item.id)?.score ?? 0;
+                                                                    return (
+                                                                        <div key={item.id} className="flex justify-between items-start gap-4">
+                                                                            <p className="text-gray-600 flex-grow">{item.text}</p>
+                                                                            <p className="font-bold text-gray-800 whitespace-nowrap text-right">{score.toFixed(2)} / {item.points.toFixed(2)}</p>
+                                                                        </div>
+                                                                    )
+                                                                })}
+                                                            </div>
+                                                            {scores.groupEval.observation && (
+                                                                <div className="mt-3">
+                                                                    <h6 className="font-semibold text-gray-600 mb-1">Observación Grupal:</h6>
+                                                                    <p className="text-gray-800 bg-gray-100 p-2 rounded border whitespace-pre-wrap">{scores.groupEval.observation}</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                            
+                                                    {/* Individual Evaluation Breakdown */}
+                                                    {scores.indEval && (
+                                                        <div>
+                                                            <h5 className="font-semibold text-gray-700 mb-2">Evaluación Individual Detallada</h5>
+                                                            <div className="space-y-2 bg-gray-50 p-3 rounded-md border">
+                                                                {INDIVIDUAL_EVALUATION_ITEMS.map(item => {
+                                                                    const score = scores.indEval?.scores.find(s => s.itemId === item.id)?.score ?? 0;
+                                                                    return (
+                                                                        <div key={item.id} className="flex justify-between items-start gap-4">
+                                                                            <p className="text-gray-600 flex-grow">{item.text}</p>
+                                                                            <p className="font-bold text-gray-800 whitespace-nowrap text-right">{score.toFixed(2)} / {item.points.toFixed(2)}</p>
+                                                                        </div>
+                                                                    )
+                                                                })}
+                                                            </div>
+                                                            {scores.indEval.observation && (
+                                                                <div className="mt-3">
+                                                                    <h6 className="font-semibold text-gray-600 mb-1">Observación Individual:</h6>
+                                                                    <p className="text-gray-800 bg-gray-100 p-2 rounded border whitespace-pre-wrap">{scores.indEval.observation}</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                            
+                                                    {!scores.groupEval && !scores.indEval && (
+                                                        <p className="text-gray-500 italic">El alumno estuvo presente pero no se han registrado notas para este servicio.</p>
+                                                    )}
                                                 </div>
                                             )}
-                                        </div>
+                                        </details>
                                     );
                                 }) : <p className="text-sm text-gray-500 italic">Este alumno no tiene servicios de prácticas asignados.</p>}
                             </div>
@@ -150,7 +211,7 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({ student,
                                 <span className="text-sm text-gray-500">Nota Media</span>
                                 <span className="text-2xl font-bold text-teal-600">{averageGrade}</span>
                             </div>
-                            <ul className="space-y-2 max-h-48 overflow-y-auto">
+                            <ul className="space-y-2 max-h-48 overflow-y-auto pr-2">
                                 {student.calificaciones?.length ? student.calificaciones.map(grade => (
                                     <li key={grade.subject} className="flex justify-between items-center text-sm">
                                         <span>{grade.subject}</span>
@@ -161,7 +222,7 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({ student,
                         </div>
                         <div className="bg-white p-6 rounded-lg shadow-sm">
                             <h3 className="text-xl font-bold mb-4 text-gray-700">Anotaciones</h3>
-                            <div className="space-y-3 max-h-60 overflow-y-auto">
+                            <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
                                 {student.anotaciones?.length ? student.anotaciones.map(annotation => (
                                     <div key={annotation.id} className={`p-3 border-l-4 bg-gray-50 ${getAnnotationColor(annotation.type)}`}>
                                         <p className="text-sm text-gray-800">{annotation.note}</p>
