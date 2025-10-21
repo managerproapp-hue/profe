@@ -44,7 +44,7 @@ const App: React.FC = () => {
   const renderView = () => {
     switch (activeView) {
       case 'Alumnos':
-        return <AlumnosView students={students} setStudents={setStudents} />;
+        return <AlumnosView students={students} setStudents={setStudents} evaluations={evaluations} />;
       case 'Gestión Práctica':
         return <GestionPracticaView students={students} />;
       case 'Cocina':
@@ -65,7 +65,7 @@ const App: React.FC = () => {
           </div>
         );
       default:
-        return <AlumnosView students={students} setStudents={setStudents} />;
+        return <AlumnosView students={students} setStudents={setStudents} evaluations={evaluations} />;
     }
   };
   

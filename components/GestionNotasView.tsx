@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback } from 'react';
 import { Student, EvaluationsState, Service, StudentGroupAssignments, GroupEvaluation, IndividualEvaluation, EvaluationItemScore } from '../types';
 import { GROUP_EVALUATION_ITEMS, INDIVIDUAL_EVALUATION_ITEMS } from '../constants';
@@ -21,6 +22,7 @@ const safeJsonParse = <T,>(key: string, defaultValue: T): T => {
 };
 
 const calculateScore = (scores: EvaluationItemScore[]): number => {
+  if (!scores) return 0;
   return scores.reduce((sum, item) => sum + item.score, 0);
 };
 
@@ -36,7 +38,8 @@ const EvaluationForm: React.FC<{
 }> = ({ service, students, studentGroupAssignments, evaluations, setEvaluations, onBack }) => {
 
     const assignedGroups = useMemo(() => {
-        return [...new Set([...service.groupAssignments.comedor, ...service.groupAssignments.takeaway])];
+        return [...new Set([...service.groupAssignments.comedor, ...service.groupAssignments.takeaway])]
+            .sort((a, b) => a.localeCompare(b));
     }, [service]);
 
     const handleGroupScoreChange = (groupId: string, itemId: string, score: number) => {
@@ -55,9 +58,9 @@ const EvaluationForm: React.FC<{
 
             const scoreIndex = targetEval.scores.findIndex(s => s.itemId === itemId);
             if (scoreIndex > -1) {
-                targetEval.scores[scoreIndex] = { itemId, score };
+                targetEval.scores[scoreIndex] = { itemId, score: isNaN(score) ? 0 : score };
             } else {
-                targetEval.scores.push({ itemId, score });
+                targetEval.scores.push({ itemId, score: isNaN(score) ? 0 : score });
             }
             return newEvals;
         });
@@ -105,9 +108,9 @@ const EvaluationForm: React.FC<{
             
             const scoreIndex = targetEval.scores.findIndex(s => s.itemId === itemId);
             if (scoreIndex > -1) {
-                targetEval.scores[scoreIndex] = { itemId, score };
+                targetEval.scores[scoreIndex] = { itemId, score: isNaN(score) ? 0 : score };
             } else {
-                targetEval.scores.push({ itemId, score });
+                targetEval.scores.push({ itemId, score: isNaN(score) ? 0 : score });
             }
             return newEvals;
         });
@@ -141,7 +144,9 @@ const EvaluationForm: React.FC<{
             
             <div className="space-y-8">
                 {assignedGroups.map(groupId => {
-                    const studentsInGroup = students.filter(s => studentGroupAssignments[s.nre] === groupId);
+                    const studentsInGroup = students
+                        .filter(s => studentGroupAssignments[s.nre] === groupId)
+                        .sort((a, b) => `${a.apellido1} ${a.apellido2} ${a.nombre}`.localeCompare(`${b.apellido1} ${b.apellido2} ${b.nombre}`));
                     const groupEval = evaluations.group.find(e => e.serviceId === service.id && e.groupId === groupId);
 
                     return (
@@ -162,7 +167,7 @@ const EvaluationForm: React.FC<{
                                                     <input
                                                         type="number"
                                                         value={currentScore}
-                                                        onChange={e => handleGroupScoreChange(groupId, item.id, parseFloat(e.target.value) || 0)}
+                                                        onChange={e => handleGroupScoreChange(groupId, item.id, parseFloat(e.target.value))}
                                                         min="0"
                                                         max={item.points}
                                                         step="0.01"
@@ -186,14 +191,14 @@ const EvaluationForm: React.FC<{
                                 <div>
                                     <h4 className="font-semibold text-lg text-green-800 mb-3">Evaluaciones Individuales</h4>
                                     <div className="space-y-4">
-                                        {studentsInGroup.map(student => {
+                                        {studentsInGroup.map((student, index) => {
                                             const individualEval = evaluations.individual.find(e => e.serviceId === service.id && e.studentNre === student.nre);
                                             const isPresent = individualEval?.attendance !== 'absent';
                                             
                                             return (
                                                 <details key={student.nre} className="bg-white p-3 rounded-md border">
                                                     <summary className="font-semibold text-md cursor-pointer flex justify-between items-center">
-                                                        <span>{student.apellido1}, {student.nombre}</span>
+                                                        <div className="flex items-center"><span className="text-sm text-gray-500 w-6">{index + 1}.</span><span>{student.apellido1} {student.apellido2}, {student.nombre}</span></div>
                                                         <div className="flex items-center gap-2">
                                                             <label className={`text-xs font-bold px-2 py-1 rounded-full ${isPresent ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                                                                 <input type="checkbox" checked={isPresent} onChange={e => handleIndividualAttendanceChange(student.nre, e.target.checked ? 'present' : 'absent')} className="mr-1"/>
@@ -211,7 +216,7 @@ const EvaluationForm: React.FC<{
                                                                         <input
                                                                             type="number"
                                                                             value={currentScore}
-                                                                            onChange={e => handleIndividualScoreChange(student.nre, item.id, parseFloat(e.target.value) || 0)}
+                                                                            onChange={e => handleIndividualScoreChange(student.nre, item.id, parseFloat(e.target.value))}
                                                                             min="0"
                                                                             max={item.points}
                                                                             step="0.01"
@@ -339,7 +344,7 @@ const NotasSummaryView: React.FC<GestionNotasViewProps & {
                                             <td className="sticky left-0 bg-white hover:bg-gray-50 px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 z-10 border-r">
                                                 <div className="flex items-center">
                                                     <span className="text-gray-500 font-normal w-6 text-right mr-2">{index + 1}.</span>
-                                                    <span>{student.apellido1}, {student.nombre}</span>
+                                                    <span>{student.apellido1} {student.apellido2}, {student.nombre}</span>
                                                 </div>
                                             </td>
                                             {services.map(service => (
@@ -348,11 +353,11 @@ const NotasSummaryView: React.FC<GestionNotasViewProps & {
                                                         <div className="flex justify-center items-center gap-2">
                                                             <div className="flex flex-col items-center">
                                                                 <span className="text-xs text-blue-600">G</span>
-                                                                <span className="font-semibold text-blue-800">{serviceScores[service.id].group}</span>
+                                                                <span className="font-semibold text-blue-800">{serviceScores[service.id].group?.toFixed(2)}</span>
                                                             </div>
                                                              <div className="flex flex-col items-center">
                                                                 <span className="text-xs text-green-600">I</span>
-                                                                <span className="font-semibold text-green-800">{serviceScores[service.id].individual}</span>
+                                                                <span className="font-semibold text-green-800">{serviceScores[service.id].individual?.toFixed(2)}</span>
                                                             </div>
                                                         </div>
                                                     ) : (

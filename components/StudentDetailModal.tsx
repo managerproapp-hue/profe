@@ -1,7 +1,27 @@
-import React, { useState } from 'react';
-import { Student, Grade, Annotation, Interview } from '../types';
+
+import React, { useState, useMemo } from 'react';
+import { Student, Grade, Annotation, Interview, EvaluationsState, Service, StudentGroupAssignments, EvaluationItemScore } from '../types';
 import { CloseIcon, PencilIcon, PlusIcon, DownloadIcon } from './icons';
 import { downloadAsPdf } from './printUtils';
+import { GROUP_EVALUATION_ITEMS, INDIVIDUAL_EVALUATION_ITEMS } from '../constants';
+
+
+// Helper function to safely parse JSON from localStorage
+const safeJsonParse = <T,>(key: string, defaultValue: T): T => {
+    try {
+        const item = localStorage.getItem(key);
+        return item ? JSON.parse(item) : defaultValue;
+    } catch (error) {
+        console.error(`Error parsing JSON from localStorage key "${key}":`, error);
+        return defaultValue;
+    }
+};
+
+const calculateScore = (scores: EvaluationItemScore[], items: {id: string, points: number}[]): number => {
+  if (!scores) return 0;
+  return scores.reduce((sum, item) => sum + item.score, 0);
+};
+
 
 // Re-using helper functions from the old view
 const getGradeColor = (score: number) => {
@@ -20,15 +40,19 @@ const getAnnotationColor = (type: 'positive' | 'negative' | 'neutral') => {
 
 interface StudentDetailModalProps {
   student: Student;
+  evaluations: EvaluationsState;
   onClose: () => void;
   onEdit: (student: Student) => void;
   onUpdateStudent: (student: Student) => void;
 }
 
-const StudentDetailModal: React.FC<StudentDetailModalProps> = ({ student, onClose, onEdit, onUpdateStudent }) => {
+const StudentDetailModal: React.FC<StudentDetailModalProps> = ({ student, evaluations, onClose, onEdit, onUpdateStudent }) => {
   const [isAddingInterview, setIsAddingInterview] = useState(false);
   const [newInterview, setNewInterview] = useState({ date: new Date().toISOString().split('T')[0], attendees: '', notes: '' });
   
+  const services = useMemo(() => safeJsonParse<Service[]>('practicaServices', []).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()), []);
+  const studentGroupAssignments = useMemo(() => safeJsonParse<StudentGroupAssignments>('studentGroupAssignments', {}), []);
+
   const averageGrade = React.useMemo(() => {
     if (!student.calificaciones || student.calificaciones.length === 0) return 'N/A';
     const total = student.calificaciones.reduce((sum, grade) => sum + grade.score, 0);
@@ -142,7 +166,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({ student, onClos
         <div style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2rem;">
             ${student.photoUrl ? `<img src="${student.photoUrl}" alt="Foto" style="width: 7rem; height: 7rem; border-radius: 9999px; object-fit: cover; border: 4px solid #e5e7eb;">` : ''}
             <div>
-                <h1 style="font-size: 2.25rem; font-weight: bold; color: #111827; line-height: 1.1;">${studentName}</h1>
+                <h1 style="font-size: 2.25rem; font-weight: bold; color: #111827; line-height: 1.1;">${student.apellido1} ${student.apellido2}, ${student.nombre}</h1>
                 <p style="font-size: 1rem; color: #4b5563;">${student.emailOficial}</p>
             </div>
         </div>
@@ -204,7 +228,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({ student, onClos
                   <input id="photo-upload" type="file" className="hidden" accept="image/*" onChange={handlePhotoUpload} />
                 </div>
                 <div className="flex-1">
-                  <h1 className="text-3xl font-bold text-gray-800">{student.nombre} {student.apellido1} {student.apellido2}</h1>
+                  <h1 className="text-3xl font-bold text-gray-800">{student.apellido1} {student.apellido2}, {student.nombre}</h1>
                   <p className="text-md text-gray-500 mt-1">{student.emailOficial}</p>
                 </div>
                 <div className="flex flex-col items-center justify-center bg-teal-50 p-4 rounded-lg border border-teal-200">
@@ -226,6 +250,52 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({ student, onClos
                     <InfoField label="Email Personal" value={student.emailPersonal} />
                 </div>
               </div>
+
+              {/* Service Evaluations */}
+                <div className="bg-white p-6 rounded-lg shadow-md">
+                    <h3 className="text-xl font-bold mb-4 text-gray-700">Evaluación de Prácticas</h3>
+                    <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                        {services.length > 0 ? services.map(service => {
+                            const indEval = evaluations.individual.find(e => e.serviceId === service.id && e.studentNre === student.nre);
+                            const studentPracticeGroup = studentGroupAssignments[student.nre];
+                            const groupEval = evaluations.group.find(e => e.serviceId === service.id && e.groupId === studentPracticeGroup);
+
+                            if (!indEval && !groupEval) return null;
+
+                            const individualScore = indEval ? calculateScore(indEval.scores, INDIVIDUAL_EVALUATION_ITEMS) : 0;
+                            const groupScore = groupEval ? calculateScore(groupEval.scores, GROUP_EVALUATION_ITEMS) : 0;
+                            const totalScore = individualScore + groupScore;
+
+                            return (
+                                <details key={service.id} className="p-3 bg-gray-50 rounded-md border border-gray-200">
+                                    <summary className="font-semibold cursor-pointer text-sm text-gray-800 flex justify-between items-center">
+                                        <div>{service.name} - <span className="font-normal text-gray-600">{new Date(service.date).toLocaleDateString()}</span></div>
+                                        {indEval?.attendance === 'absent'
+                                            ? <span className="text-xs font-bold px-2 py-1 rounded-full bg-red-100 text-red-800">AUSENTE</span>
+                                            : <span className="font-bold text-gray-800">{totalScore.toFixed(2)} / 20</span>
+                                        }
+                                    </summary>
+                                    {indEval?.attendance !== 'absent' && (
+                                        <div className="mt-3 pt-3 border-t grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                            <div>
+                                                <h4 className="font-bold text-gray-600 mb-1">Nota Individual: {individualScore.toFixed(2)} / 10</h4>
+                                                {indEval?.observation && <p className="p-2 bg-white rounded border text-gray-700 text-xs whitespace-pre-wrap">{indEval.observation}</p>}
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-gray-600 mb-1">Nota Grupal ({studentPracticeGroup}): {groupScore.toFixed(2)} / 10</h4>
+                                                {groupEval?.observation && <p className="p-2 bg-white rounded border text-gray-700 text-xs whitespace-pre-wrap">{groupEval.observation}</p>}
+                                            </div>
+                                        </div>
+                                    )}
+                                </details>
+                            )
+                        }) : <p className="text-sm text-gray-500 italic text-center py-4">No hay servicios evaluados.</p>}
+                         {services.every(service => !evaluations.individual.find(e => e.serviceId === service.id && e.studentNre === student.nre)) && 
+                            <p className="text-sm text-gray-500 italic text-center py-4">Este alumno no tiene evaluaciones de prácticas registradas.</p>
+                         }
+                    </div>
+                </div>
+
 
               {/* Interviews */}
               <div className="bg-white p-6 rounded-lg shadow-md">

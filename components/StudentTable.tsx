@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Student } from '../types';
 
@@ -49,7 +50,7 @@ const StudentTable: React.FC<StudentTableProps> = ({ students, onSelectStudent, 
             ))}
              {students.length === 0 && (
                 <tr>
-                    <td colSpan={6} className="text-center py-10 text-gray-500">No se encontraron alumnos.</td>
+                    <td colSpan={7} className="text-center py-10 text-gray-500">No se encontraron alumnos.</td>
                 </tr>
              )}
           </tbody>

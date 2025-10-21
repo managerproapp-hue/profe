@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Student } from '../types';
 import { UsersIcon, GroupIcon, ServiceIcon, CalendarIcon, TrashIcon, CloseIcon, CogIcon, PlusIcon, PencilIcon, CheckIcon, XIcon, DownloadIcon } from './icons';
@@ -292,7 +293,7 @@ const ServiciosTab: React.FC<{
                                 <h4 className="font-semibold mb-2">Resumen de Líderes</h4>
                                 {leaders.length > 0 ? (
                                      <ul className="text-sm space-y-1">
-                                        {leaders.map(l => <li key={l.nre}><strong>{leaderAssignments[l.nre]}:</strong> {l.nombre} {l.apellido1}</li>)}
+                                        {leaders.map(l => <li key={l.nre}><strong>{leaderAssignments[l.nre]}:</strong> {l.apellido1}, {l.nombre}</li>)}
                                      </ul>
                                 ) : <p className="text-sm text-gray-500">Pendiente de asignación.</p>}
                                  <button className="mt-4 text-sm bg-gray-200 px-3 py-1 rounded-md hover:bg-gray-300 w-full" onClick={() => alert("Función para gestionar ficha de servicio (menú, evaluaciones, etc.) no implementada.")}>
@@ -434,9 +435,9 @@ const PlanningTab: React.FC<{
                                 </tr>
                             </thead>
                             <tbody>
-                                ${studentsInGroup.sort((a,b) => a.apellido1.localeCompare(b.apellido1)).map(student => {
+                                ${studentsInGroup.sort((a,b) => `${a.apellido1} ${a.apellido2} ${a.nombre}`.localeCompare(`${b.apellido1} ${b.apellido2} ${b.nombre}`)).map(student => {
                                     const role = serviceAssignments[student.nre] || 'Sin asignar';
-                                    const fullName = `${student.apellido1}, ${student.nombre}`;
+                                    const fullName = `${student.apellido1} ${student.apellido2}, ${student.nombre}`;
                                     return `
                                         <tr style="border-top: 1px solid #eee;">
                                             <td style="padding: 2px;">${fullName}</td>
@@ -494,7 +495,7 @@ const PlanningTab: React.FC<{
             dataToExport.push({
                 'Partida': 'Liderazgo',
                 'Rol': role,
-                'Alumno': student ? `${student.apellido1}, ${student.nombre}` : 'Sin asignar'
+                'Alumno': student ? `${student.apellido1} ${student.apellido2}, ${student.nombre}` : 'Sin asignar'
             });
         });
 
@@ -505,7 +506,7 @@ const PlanningTab: React.FC<{
                  dataToExport.push({
                     'Partida': groupName,
                     'Rol': serviceAssignments[student.nre] || 'Sin asignar',
-                    'Alumno': `${student.apellido1}, ${student.nombre}`
+                    'Alumno': `${student.apellido1} ${student.apellido2}, ${student.nombre}`
                 });
             });
         });
@@ -575,7 +576,9 @@ const PlanningTab: React.FC<{
                         {/* Group/Partida Assignments */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {serviceGroups.map(groupName => {
-                                const studentsInGroup = students.filter(s => studentGroupAssignments[s.nre] === groupName);
+                                const studentsInGroup = students
+                                    .filter(s => studentGroupAssignments[s.nre] === groupName)
+                                    .sort((a,b) => `${a.apellido1} ${a.apellido2} ${a.nombre}`.localeCompare(`${b.apellido1} ${b.apellido2} ${b.nombre}`));
                                 
                                 const rolesAssignedInGroup = Object.values(serviceAssignments).filter(role => {
                                   const assigneeNre = Object.keys(serviceAssignments).find(nre => serviceAssignments[nre] === role);
@@ -591,7 +594,7 @@ const PlanningTab: React.FC<{
                                                 const availableRoles = SECONDARY_ROLES.filter(r => !rolesAssignedInGroup.includes(r));
                                                 return (
                                                     <div key={student.nre} className="flex items-center justify-between">
-                                                        <span className="text-sm font-medium text-gray-700 w-2/5 truncate">{student.apellido1}, {student.nombre}</span>
+                                                        <span className="text-sm font-medium text-gray-700 w-2/5 truncate">{student.apellido1} {student.apellido2}, {student.nombre}</span>
                                                         <select
                                                             value={currentRole}
                                                             onChange={e => handlePlanningChange(service.id, student.nre, e.target.value, groupName)}
@@ -665,9 +668,9 @@ const PartidasYGruposTab: React.FC<{
                 <h3 style="font-size: 1rem; font-weight: bold; margin-bottom: 0.5rem;">${group} (${members.length} miembros)</h3>
                 ${members.length > 0 ? `
                     <table style="margin-top: 0.5rem; width: 100%;">
-                        <thead><tr><th style="font-size: 0.75rem; text-align: left; padding: 4px;">Nombre Completo</th></tr></thead>
+                        <thead><tr><th style="font-size: 0.75rem; text-align: left; padding: 4px;">#</th><th style="font-size: 0.75rem; text-align: left; padding: 4px;">Nombre Completo</th></tr></thead>
                         <tbody>
-                            ${members.map(m => `<tr style="font-size: 0.75rem;"><td style="padding: 4px;">${m.apellido1} ${m.apellido2}, ${m.nombre}</td></tr>`).join('')}
+                            ${members.sort((a,b) => `${a.apellido1} ${a.apellido2}`.localeCompare(`${b.apellido1} ${b.apellido2}`)).map((m, i) => `<tr style="font-size: 0.75rem;"><td style="padding: 4px;">${i+1}</td><td style="padding: 4px;">${m.apellido1} ${m.apellido2}, ${m.nombre}</td></tr>`).join('')}
                         </tbody>
                     </table>
                 ` : '<p style="font-size: 0.75rem; color: #6b7280;">No hay alumnos en este grupo.</p>'}
@@ -684,7 +687,7 @@ const PartidasYGruposTab: React.FC<{
   const handleExportExcelGroups = () => {
     const dataToExport: any[] = [];
     practicaGroups.forEach(group => {
-        const members = students.filter(s => studentGroupAssignments[s.nre] === group);
+        const members = students.filter(s => studentGroupAssignments[s.nre] === group).sort((a,b) => `${a.apellido1} ${a.apellido2}`.localeCompare(`${b.apellido1} ${b.apellido2}`));
         if (members.length > 0) {
             members.forEach(m => {
                 dataToExport.push({
@@ -770,7 +773,9 @@ const PartidasYGruposTab: React.FC<{
                 </div>
                 <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
                 {practicaGroups.map((group) => {
-                    const members = students.filter(s => studentGroupAssignments[s.nre] === group);
+                    const members = students
+                        .filter(s => studentGroupAssignments[s.nre] === group)
+                        .sort((a,b) => `${a.apellido1} ${a.apellido2} ${a.nombre}`.localeCompare(`${b.apellido1} ${b.apellido2} ${b.nombre}`));
                     const colorName = groupColors[group] || 'default';
                     const { border: borderColor, bg: bgColor } = colorStyles[colorName] || colorStyles.default;
                     return (
@@ -782,11 +787,12 @@ const PartidasYGruposTab: React.FC<{
                             </button>
                         </div>
                         <div className="space-y-2">
-                        {members.length > 0 ? members.map(member => (
+                        {members.length > 0 ? members.map((member, index) => (
                             <div key={member.nre} className="flex items-center justify-between bg-white p-2 rounded-md shadow-sm">
                             <div className="flex items-center space-x-2 min-w-0">
+                                <span className="text-xs text-gray-500 w-5">{index + 1}.</span>
                                 <img src={member.photoUrl || `https://i.pravatar.cc/150?u=${member.nre}`} alt="" className="h-8 w-8 rounded-full flex-shrink-0" />
-                                <span className="text-sm font-medium truncate">{member.apellido1}, {member.nombre}</span>
+                                <span className="text-sm font-medium truncate">{member.apellido1} {member.apellido2}, {member.nombre}</span>
                             </div>
                             <button onClick={() => handleRemoveFromGroup(member.nre)} title="Quitar del grupo" className="text-gray-400 hover:text-red-500 ml-2"><CloseIcon className="h-4 w-4" /></button>
                             </div>
