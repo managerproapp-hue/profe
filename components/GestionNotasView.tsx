@@ -155,17 +155,20 @@ const EvaluationForm: React.FC<{
                                     <h4 className="font-semibold text-lg text-blue-800 mb-3">Evaluación Grupal</h4>
                                     <div className="space-y-3">
                                         {GROUP_EVALUATION_ITEMS.map(item => {
-                                            const currentScore = groupEval?.scores.find(s => s.itemId === item.id)?.score ?? 0;
+                                            const currentScore = groupEval?.scores.find(s => s.itemId === item.id)?.score ?? '';
                                             return (
                                                 <div key={item.id} className="grid grid-cols-4 items-center gap-4 text-sm">
                                                     <label className="col-span-3 text-gray-700">{item.text}</label>
-                                                    <select
+                                                    <input
+                                                        type="number"
                                                         value={currentScore}
-                                                        onChange={e => handleGroupScoreChange(groupId, item.id, parseInt(e.target.value))}
-                                                        className="p-2 border rounded-md"
-                                                    >
-                                                        {[...Array(item.points + 1)].map((_, i) => <option key={i} value={i}>{i}</option>)}
-                                                    </select>
+                                                        onChange={e => handleGroupScoreChange(groupId, item.id, parseFloat(e.target.value) || 0)}
+                                                        min="0"
+                                                        max={item.points}
+                                                        step="0.01"
+                                                        placeholder={`Max: ${item.points}`}
+                                                        className="p-2 border rounded-md w-24 text-center"
+                                                    />
                                                 </div>
                                             );
                                         })}
@@ -190,7 +193,7 @@ const EvaluationForm: React.FC<{
                                             return (
                                                 <details key={student.nre} className="bg-white p-3 rounded-md border">
                                                     <summary className="font-semibold text-md cursor-pointer flex justify-between items-center">
-                                                        <span>{student.nombre} {student.apellido1}</span>
+                                                        <span>{student.apellido1}, {student.nombre}</span>
                                                         <div className="flex items-center gap-2">
                                                             <label className={`text-xs font-bold px-2 py-1 rounded-full ${isPresent ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                                                                 <input type="checkbox" checked={isPresent} onChange={e => handleIndividualAttendanceChange(student.nre, e.target.checked ? 'present' : 'absent')} className="mr-1"/>
@@ -201,17 +204,20 @@ const EvaluationForm: React.FC<{
                                                     {isPresent && (
                                                         <div className="mt-4 pt-4 border-t space-y-3">
                                                             {INDIVIDUAL_EVALUATION_ITEMS.map(item => {
-                                                                const currentScore = individualEval?.scores.find(s => s.itemId === item.id)?.score ?? 0;
+                                                                const currentScore = individualEval?.scores.find(s => s.itemId === item.id)?.score ?? '';
                                                                 return (
                                                                     <div key={item.id} className="grid grid-cols-4 items-center gap-4 text-sm">
                                                                         <label className="col-span-3 text-gray-700">{item.text}</label>
-                                                                        <select 
+                                                                        <input
+                                                                            type="number"
                                                                             value={currentScore}
-                                                                            onChange={e => handleIndividualScoreChange(student.nre, item.id, parseInt(e.target.value))}
-                                                                            className="p-2 border rounded-md"
-                                                                        >
-                                                                            {[...Array(item.points + 1)].map((_, i) => <option key={i} value={i}>{i}</option>)}
-                                                                        </select>
+                                                                            onChange={e => handleIndividualScoreChange(student.nre, item.id, parseFloat(e.target.value) || 0)}
+                                                                            min="0"
+                                                                            max={item.points}
+                                                                            step="0.01"
+                                                                            placeholder={`Max: ${item.points}`}
+                                                                            className="p-2 border rounded-md w-24 text-center"
+                                                                        />
                                                                     </div>
                                                                 );
                                                             })}
@@ -252,12 +258,23 @@ const NotasSummaryView: React.FC<GestionNotasViewProps & {
             if (!grouped[groupName]) grouped[groupName] = [];
             grouped[groupName].push(s);
         });
+
+        // Sort students within each group
+        for (const groupName in grouped) {
+            grouped[groupName].sort((a, b) => {
+                const nameA = `${a.apellido1} ${a.apellido2} ${a.nombre}`.toLowerCase();
+                const nameB = `${b.apellido1} ${b.apellido2} ${b.nombre}`.toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
+        }
+        
         return Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b));
     }, [students]);
 
     const getScoresForStudent = useCallback((student: Student) => {
         const serviceScores: { [serviceId: string]: { group: number | null, individual: number | null } } = {};
         let totalScore = 0;
+        let servicesCounted = 0;
 
         services.forEach(service => {
             const indEval = evaluations.individual.find(e => e.serviceId === service.id && e.studentNre === student.nre);
@@ -271,12 +288,13 @@ const NotasSummaryView: React.FC<GestionNotasViewProps & {
                 
                 serviceScores[service.id] = { group: groupScore, individual: individualScore };
                 totalScore += individualScore + groupScore;
+                servicesCounted++;
             } else {
                 serviceScores[service.id] = { group: null, individual: null }; // null indicates absence or not graded
             }
         });
         
-        const average = services.length > 0 ? totalScore / services.length : 0;
+        const average = servicesCounted > 0 ? totalScore / servicesCounted : 0;
 
         return { serviceScores, average };
 
@@ -314,11 +332,16 @@ const NotasSummaryView: React.FC<GestionNotasViewProps & {
                                 <tr>
                                     <td colSpan={services.length + 2} className="px-4 py-2 bg-gray-100 text-sm font-bold text-gray-700 sticky left-0 z-10">{groupName}</td>
                                 </tr>
-                                {groupStudents.map(student => {
+                                {groupStudents.map((student, index) => {
                                     const { serviceScores, average } = getScoresForStudent(student);
                                     return (
                                         <tr key={student.nre} className="hover:bg-gray-50">
-                                            <td className="sticky left-0 bg-white hover:bg-gray-50 px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 z-10 border-r">{student.nombre} {student.apellido1}</td>
+                                            <td className="sticky left-0 bg-white hover:bg-gray-50 px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 z-10 border-r">
+                                                <div className="flex items-center">
+                                                    <span className="text-gray-500 font-normal w-6 text-right mr-2">{index + 1}.</span>
+                                                    <span>{student.apellido1}, {student.nombre}</span>
+                                                </div>
+                                            </td>
                                             {services.map(service => (
                                                 <td key={service.id} className="px-3 py-2 text-center text-sm">
                                                     {serviceScores[service.id].group !== null ? (
@@ -355,7 +378,7 @@ const GestionNotasView: React.FC<GestionNotasViewProps> = ({ students, evaluatio
     const [view, setView] = useState<'summary' | 'evaluate'>('summary');
     const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
 
-    const services = useMemo(() => safeJsonParse<Service[]>('practicaServices', []), []);
+    const services = useMemo(() => safeJsonParse<Service[]>('practicaServices', []).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()), []);
     const studentGroupAssignments = useMemo(() => safeJsonParse<StudentGroupAssignments>('studentGroupAssignments', {}), []);
 
     const handleSelectService = (serviceId: string) => {

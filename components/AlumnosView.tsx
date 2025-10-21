@@ -14,16 +14,17 @@ interface AlumnosViewProps {
 
 type ViewMode = 'grid' | 'list';
 
-const StudentCard: React.FC<{ student: Student; onSelect: () => void; onEdit: () => void; onDelete: () => void; }> = 
-({ student, onSelect, onEdit, onDelete }) => (
-    <div className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 flex flex-col">
+const StudentCard: React.FC<{ student: Student; index: number; onSelect: () => void; onEdit: () => void; onDelete: () => void; }> = 
+({ student, index, onSelect, onEdit, onDelete }) => (
+    <div className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 flex flex-col relative">
+        <span className="absolute top-2 right-2 bg-teal-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center z-10">{index}</span>
         <div className="p-4 flex-grow">
             <img 
                 className="w-24 h-24 rounded-full mx-auto border-4 border-gray-100" 
                 src={student.photoUrl || `https://i.pravatar.cc/150?u=${student.nre}`} 
                 alt={`${student.nombre} ${student.apellido1}`} 
             />
-            <h3 className="text-center mt-3 font-bold text-gray-800">{student.nombre} {student.apellido1}</h3>
+            <h3 className="text-center mt-3 font-bold text-gray-800">{student.apellido1} {student.apellido2}, {student.nombre}</h3>
             <p className="text-center text-sm text-gray-500">{student.grupo}</p>
         </div>
         <div className="bg-gray-50 p-2 flex justify-around rounded-b-lg">
@@ -92,20 +93,30 @@ const AlumnosView: React.FC<AlumnosViewProps> = ({ students, setStudents }) => {
       setStudents(prev => [...prev, ...studentsToAdd]);
       setIsImporting(false);
   };
+  
+  const sortedStudents = useMemo(() => {
+    return [...students].sort((a, b) => {
+        const nameA = `${a.apellido1} ${a.apellido2} ${a.nombre}`.toLowerCase();
+        const nameB = `${b.apellido1} ${b.apellido2} ${b.nombre}`.toLowerCase();
+        return nameA.localeCompare(nameB);
+    });
+  }, [students]);
 
   const filteredStudents = useMemo(() => {
-    return students.filter(student =>
+    if (!filter) return sortedStudents;
+    return sortedStudents.filter(student =>
       `${student.nombre} ${student.apellido1} ${student.apellido2} ${student.nre} ${student.grupo}`
         .toLowerCase()
         .includes(filter.toLowerCase())
     );
-  }, [students, filter]);
+  }, [sortedStudents, filter]);
   
   const handleDownloadPdfList = () => {
     const tableHtml = `
       <table>
         <thead>
           <tr>
+            <th>#</th>
             <th>Nombre Completo</th>
             <th>NRE</th>
             <th>Grupo</th>
@@ -114,9 +125,10 @@ const AlumnosView: React.FC<AlumnosViewProps> = ({ students, setStudents }) => {
           </tr>
         </thead>
         <tbody>
-          ${filteredStudents.map(s => `
+          ${filteredStudents.map((s, index) => `
             <tr>
-              <td>${s.nombre} ${s.apellido1} ${s.apellido2}</td>
+              <td>${index + 1}</td>
+              <td>${s.apellido1} ${s.apellido2}, ${s.nombre}</td>
               <td>${s.nre}</td>
               <td>${s.grupo}</td>
               <td>${s.emailOficial}</td>
@@ -131,10 +143,11 @@ const AlumnosView: React.FC<AlumnosViewProps> = ({ students, setStudents }) => {
   };
 
   const handleExportExcel = () => {
-    const dataToExport = filteredStudents.map(s => ({
-        'Nombre': s.nombre,
+    const dataToExport = filteredStudents.map((s, index) => ({
+        '#': index + 1,
         'Apellido 1': s.apellido1,
         'Apellido 2': s.apellido2,
+        'Nombre': s.nombre,
         'NRE': s.nre,
         'Expediente': s.expediente,
         'Grupo': s.grupo,
@@ -211,10 +224,11 @@ const AlumnosView: React.FC<AlumnosViewProps> = ({ students, setStudents }) => {
 
         {viewMode === 'grid' ? (
              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                {filteredStudents.map(student => (
+                {filteredStudents.map((student, index) => (
                     <StudentCard 
                         key={student.nre}
                         student={student}
+                        index={index + 1}
                         onSelect={() => setStudentToView(student)}
                         onEdit={() => setStudentToEdit(student)}
                         onDelete={() => handleDeleteStudent(student.nre)}

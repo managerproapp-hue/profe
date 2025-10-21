@@ -317,6 +317,14 @@ const PlanningTab: React.FC<{
     const [isLoading, setIsLoading] = useState<string | null>(null); // serviceId of loading service
     const [openExportMenu, setOpenExportMenu] = useState<string | null>(null);
 
+    const sortedStudentsForDropdown = useMemo(() => {
+        return [...students].sort((a, b) => {
+            const nameA = `${a.apellido1} ${a.apellido2} ${a.nombre}`.toLowerCase();
+            const nameB = `${b.apellido1} ${b.apellido2} ${b.nombre}`.toLowerCase();
+            return nameA.localeCompare(nameB);
+        });
+    }, [students]);
+
     const handlePlanningChange = (serviceId: string, studentNre: string, newRole: string, groupName: string | null) => {
         setPlanningAssignments(prev => {
             const serviceAssignments = { ...(prev[serviceId] || {}) };
@@ -403,7 +411,7 @@ const PlanningTab: React.FC<{
         const findLeaderName = (role: string) => {
             const studentNre = Object.keys(serviceAssignments).find(nre => serviceAssignments[nre] === role);
             const student = students.find(s => s.nre === studentNre);
-            return student ? `${student.nombre} ${student.apellido1}` : 'Sin asignar';
+            return student ? `${student.apellido1}, ${student.nombre}` : 'Sin asignar';
         };
 
         const jefeCocina = findLeaderName("Jefe de Cocina");
@@ -426,9 +434,9 @@ const PlanningTab: React.FC<{
                                 </tr>
                             </thead>
                             <tbody>
-                                ${studentsInGroup.map(student => {
+                                ${studentsInGroup.sort((a,b) => a.apellido1.localeCompare(b.apellido1)).map(student => {
                                     const role = serviceAssignments[student.nre] || 'Sin asignar';
-                                    const fullName = `${student.nombre} ${student.apellido1}`;
+                                    const fullName = `${student.apellido1}, ${student.nombre}`;
                                     return `
                                         <tr style="border-top: 1px solid #eee;">
                                             <td style="padding: 2px;">${fullName}</td>
@@ -486,7 +494,7 @@ const PlanningTab: React.FC<{
             dataToExport.push({
                 'Partida': 'Liderazgo',
                 'Rol': role,
-                'Alumno': student ? `${student.nombre} ${student.apellido1}` : 'Sin asignar'
+                'Alumno': student ? `${student.apellido1}, ${student.nombre}` : 'Sin asignar'
             });
         });
 
@@ -497,7 +505,7 @@ const PlanningTab: React.FC<{
                  dataToExport.push({
                     'Partida': groupName,
                     'Rol': serviceAssignments[student.nre] || 'Sin asignar',
-                    'Alumno': `${student.nombre} ${student.apellido1}`
+                    'Alumno': `${student.apellido1}, ${student.nombre}`
                 });
             });
         });
@@ -556,7 +564,7 @@ const PlanningTab: React.FC<{
                                             <label className="text-xs font-medium text-gray-600">{role}</label>
                                             <select value={assignedStudentNre || "Sin asignar"} onChange={e => handlePlanningChange(service.id, e.target.value, role, null)} className="w-full text-sm p-1.5 border rounded-md bg-white">
                                                 <option value="Sin asignar">Sin asignar</option>
-                                                {students.map(s => <option key={s.nre} value={s.nre}>{s.nombre} {s.apellido1}</option>)}
+                                                {sortedStudentsForDropdown.map(s => <option key={s.nre} value={s.nre}>{s.apellido1} {s.apellido2}, {s.nombre}</option>)}
                                             </select>
                                         </div>
                                     );
@@ -583,7 +591,7 @@ const PlanningTab: React.FC<{
                                                 const availableRoles = SECONDARY_ROLES.filter(r => !rolesAssignedInGroup.includes(r));
                                                 return (
                                                     <div key={student.nre} className="flex items-center justify-between">
-                                                        <span className="text-sm font-medium text-gray-700 w-2/5 truncate">{student.nombre} {student.apellido1}</span>
+                                                        <span className="text-sm font-medium text-gray-700 w-2/5 truncate">{student.apellido1}, {student.nombre}</span>
                                                         <select
                                                             value={currentRole}
                                                             onChange={e => handlePlanningChange(service.id, student.nre, e.target.value, groupName)}
@@ -659,7 +667,7 @@ const PartidasYGruposTab: React.FC<{
                     <table style="margin-top: 0.5rem; width: 100%;">
                         <thead><tr><th style="font-size: 0.75rem; text-align: left; padding: 4px;">Nombre Completo</th></tr></thead>
                         <tbody>
-                            ${members.map(m => `<tr style="font-size: 0.75rem;"><td style="padding: 4px;">${m.nombre} ${m.apellido1} ${m.apellido2 || ''}</td></tr>`).join('')}
+                            ${members.map(m => `<tr style="font-size: 0.75rem;"><td style="padding: 4px;">${m.apellido1} ${m.apellido2}, ${m.nombre}</td></tr>`).join('')}
                         </tbody>
                     </table>
                 ` : '<p style="font-size: 0.75rem; color: #6b7280;">No hay alumnos en este grupo.</p>'}
@@ -681,23 +689,27 @@ const PartidasYGruposTab: React.FC<{
             members.forEach(m => {
                 dataToExport.push({
                     'Grupo': group,
-                    'Nombre': m.nombre,
                     'Apellidos': `${m.apellido1} ${m.apellido2}`,
+                    'Nombre': m.nombre,
                     'NRE': m.nre
                 });
             });
         } else {
-             dataToExport.push({ 'Grupo': group, 'Nombre': 'Sin alumnos', 'Apellidos': '', 'NRE': '' });
+             dataToExport.push({ 'Grupo': group, 'Apellidos': 'Sin alumnos', 'Nombre': '', 'NRE': '' });
         }
     });
     exportToExcel(dataToExport, 'distribucion_grupos', 'Grupos');
     setIsExportMenuOpen(false);
   };
 
-
   const filteredStudents = useMemo(() => students.filter(student =>
-      `${student.nombre} ${student.apellido1}`.toLowerCase().includes(filter.toLowerCase())), 
-    [students, filter]);
+        `${student.nombre} ${student.apellido1} ${student.apellido2}`.toLowerCase().includes(filter.toLowerCase())
+    ).sort((a, b) => {
+        const nameA = `${a.apellido1} ${a.apellido2} ${a.nombre}`.toLowerCase();
+        const nameB = `${b.apellido1} ${b.apellido2} ${b.nombre}`.toLowerCase();
+        return nameA.localeCompare(nameB);
+    }), 
+  [students, filter]);
 
   return (
     <div>
@@ -724,7 +736,7 @@ const PartidasYGruposTab: React.FC<{
                 <h4 className="text-lg font-semibold text-gray-800 mb-4">Alumnos y Participación</h4>
                 <input type="text" placeholder="Buscar alumno..." value={filter} onChange={(e) => setFilter(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-teal-500"/>
                 <div className="bg-white p-2 sm:p-4 rounded-lg shadow-md space-y-4 max-h-[60vh] overflow-y-auto">
-                {filteredStudents.map(student => {
+                {filteredStudents.map((student, index) => {
                     const studentGroup = studentGroupAssignments[student.nre];
                     const studentColorName = studentGroup ? groupColors[studentGroup] : 'default';
                     const studentColorStyle = colorStyles[studentColorName] || colorStyles.default;
@@ -732,9 +744,10 @@ const PartidasYGruposTab: React.FC<{
                     return (
                     <div key={student.nre} className={`border-b pb-4 last:border-b-0 border-l-4 p-2 rounded-r-md ${studentColorStyle.border}`}>
                         <div className="flex items-center space-x-4">
+                        <span className="font-bold text-gray-500 w-6 text-center">{index + 1}.</span>
                         <img src={student.photoUrl || `https://i.pravatar.cc/150?u=${student.nre}`} alt="" className="h-12 w-12 rounded-full flex-shrink-0" />
                         <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-gray-900 truncate">{student.nombre} {student.apellido1}</p>
+                            <p className="font-semibold text-gray-900 truncate">{student.apellido1} {student.apellido2}, {student.nombre}</p>
                             <p className="text-sm text-gray-500">{student.grupo}</p>
                         </div>
                         <div className="flex items-center space-x-2">
@@ -773,7 +786,7 @@ const PartidasYGruposTab: React.FC<{
                             <div key={member.nre} className="flex items-center justify-between bg-white p-2 rounded-md shadow-sm">
                             <div className="flex items-center space-x-2 min-w-0">
                                 <img src={member.photoUrl || `https://i.pravatar.cc/150?u=${member.nre}`} alt="" className="h-8 w-8 rounded-full flex-shrink-0" />
-                                <span className="text-sm font-medium truncate">{member.nombre} {member.apellido1}</span>
+                                <span className="text-sm font-medium truncate">{member.apellido1}, {member.nombre}</span>
                             </div>
                             <button onClick={() => handleRemoveFromGroup(member.nre)} title="Quitar del grupo" className="text-gray-400 hover:text-red-500 ml-2"><CloseIcon className="h-4 w-4" /></button>
                             </div>

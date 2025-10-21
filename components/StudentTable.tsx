@@ -15,6 +15,7 @@ const StudentTable: React.FC<StudentTableProps> = ({ students, onSelectStudent, 
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre Completo</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NRE</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grupo</th>
@@ -23,15 +24,16 @@ const StudentTable: React.FC<StudentTableProps> = ({ students, onSelectStudent, 
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {students.map(student => (
+            {students.map((student, index) => (
               <tr key={student.nre} className="hover:bg-gray-50">
+                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 font-medium">{index + 1}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <div className="flex-shrink-0 h-10 w-10">
                       <img className="h-10 w-10 rounded-full" src={student.photoUrl || `https://i.pravatar.cc/150?u=${student.nre}`} alt="" />
                     </div>
                     <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">{student.nombre} {student.apellido1} {student.apellido2}</div>
+                      <div className="text-sm font-medium text-gray-900">{student.apellido1} {student.apellido2}, {student.nombre}</div>
                     </div>
                   </div>
                 </td>
@@ -47,7 +49,7 @@ const StudentTable: React.FC<StudentTableProps> = ({ students, onSelectStudent, 
             ))}
              {students.length === 0 && (
                 <tr>
-                    <td colSpan={5} className="text-center py-10 text-gray-500">No se encontraron alumnos.</td>
+                    <td colSpan={6} className="text-center py-10 text-gray-500">No se encontraron alumnos.</td>
                 </tr>
              )}
           </tbody>
