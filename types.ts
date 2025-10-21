@@ -52,6 +52,7 @@ export type NavItemType =
   | 'Alumnos' 
   | 'Gestión Práctica' 
   | 'Gestión de Notas' 
+  | 'Exámenes Prácticos'
   | 'Gestión Académica'
   | 'Cocina'
   | 'Gestión de la App';
@@ -163,4 +164,23 @@ export interface IndividualEvaluation {
 export interface EvaluationsState {
   group: GroupEvaluation[];
   individual: IndividualEvaluation[];
+}
+
+// --- EXÁMENES PRÁCTICOS TYPES ---
+export type ExamType = 'T1' | 'T2' | 'REC';
+
+export interface PracticalExamScore {
+  criterionId: string;
+  score: number; // e.g., 10, 8, 5, 2
+  notes: string;
+}
+
+export interface StudentPracticalExam {
+  studentNre: string;
+  examType: ExamType;
+  scores: PracticalExamScore[];
+  generalObservations?: string;
+  startTime?: string;
+  endTime?: string;
+  finalScore?: number;
 }

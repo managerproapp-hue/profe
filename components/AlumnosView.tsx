@@ -1,8 +1,9 @@
 
+
 import React, { useState, useMemo, useCallback } from 'react';
 import { Student, EvaluationsState } from '../types';
 import StudentTable from './StudentTable';
-import StudentDetailModal from './StudentDetailModal';
+import { StudentDetailModal } from './StudentDetailModal';
 import ImportModal from './ImportModal';
 import AddEditStudentModal from './EditStudentModal';
 import { EyeIcon, PencilIcon, TrashIcon, ViewGridIcon, ViewListIcon, PlusIcon, DownloadIcon } from './icons';

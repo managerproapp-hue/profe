@@ -1,4 +1,3 @@
-
 import { Student, NavItemType, Product } from './types';
 
 export const INITIAL_STUDENTS: Student[] = [
@@ -84,35 +83,132 @@ export const NAV_ITEMS: NavItemType[] = [
   'Alumnos',
   'Gestión Práctica',
   'Gestión de Notas',
+  'Exámenes Prácticos',
   'Gestión Académica',
   'Cocina',
   'Gestión de la App',
 ];
 
 export const GROUP_EVALUATION_ITEMS = [
-  { id: 'g1', text: 'Planifica y organiza correctamente la mise en place, asegurando que todos los ingredientes, utensilios y herramientas estén listos antes de comenzar.', points: 1 },
-  { id: 'g2', text: 'Selecciona, manipula y conserva los ingredientes de forma adecuada, garantizando su frescura, calidad y correcta utilización durante todo el proceso de elaboración.', points: 2 },
-  { id: 'g3', text: 'Controla y ajusta los tiempos de cocción para asegurar que todos los elementos del plato estén en su punto exacto al momento del servicio.', points: 1 },
-  { id: 'g4', text: 'Mantiene en todo momento las normas de higiene y seguridad alimentaria, asegurando un entorno de trabajo limpio y una correcta manipulación de los alimentos.', points: 1 },
-  { id: 'g5', text: 'Coordina de forma eficiente el trabajo con tus compañeros, asegurando que la preparación de los platos se realice de manera sincronizada y a tiempo.', points: 1 },
-  { id: 'g6', text: 'Identifica los errores cometidos durante el proceso de elaboración y plantea posibles soluciones para mejorar en futuras ocasiones.', points: 1 },
-  { id: 'g7', text: '¿Ha sido capaz de trabajar en equipo y con actitud activa participativa?', points: 1 },
-  { id: 'g8', text: 'Gestiona los ingredientes sobrantes de forma adecuada, minimizando el desperdicio y aprovechando los productos de manera eficiente.', points: 2 },
+  { id: 'g1', text: 'Planifica y organiza correctamente la mise en place, asegurando que todos los ingredientes, utensilios y herramientas estén listos antes de comenzar.', points: 1.0 },
+  { id: 'g2', text: 'Selecciona, manipula y conserva los ingredientes de forma adecuada, garantizando su frescura, calidad y correcta utilización durante todo el proceso de elaboración.', points: 1.5 },
+  { id: 'g3', text: 'Controla y ajusta los tiempos de cocción para asegurar que todos los elementos del plato estén en su punto exacto al momento del servicio.', points: 1.0 },
+  { id: 'g4', text: 'Mantiene en todo momento las normas de higiene y seguridad alimentaria, asegurando un entorno de trabajo limpio y una correcta manipulación de los alimentos.', points: 1.5 },
+  { id: 'g5', text: 'Coordina de forma eficiente el trabajo con tus compañeros, asegurando que la preparación de los platos se realice de manera sincronizada y a tiempo.', points: 1.0 },
+  { id: 'g6', text: 'Identifica los errores cometidos durante el proceso de elaboración y plantea posibles soluciones para mejorar en futuras ocasiones.', points: 1.0 },
+  { id: 'g7', text: '¿Ha sido capaz de trabajar en equipo y con actitud activa participativa?', points: 1.0 },
+  { id: 'g8', text: 'Gestiona los ingredientes sobrantes de forma adecuada, minimizando el desperdicio y aprovechando los productos de manera eficiente.', points: 2.0 },
 ];
 
 export const INDIVIDUAL_EVALUATION_ITEMS = [
-  { id: 'i1', text: '¿Ha realizado operaciones de puesta en marcha de maquinaria y equipos siguiendo los procedimientos establecidos por el profesor?', points: 1 },
-  { id: 'i2', text: '¿Ha realizado las operaciones de mise-enplace utilizando correctamente útiles y/o herramientas, siguiendo los procedimientos establecidos por el profesor?', points: 1 },
-  { id: 'i3', text: '¿Ha sido capaz de Interpretar las fichas técnicas o documentación necesaria para las elaboraciones que le han tocado desarrollar?', points: 1 },
-  { id: 'i4', text: '¿Ha asistido con el material requerido (fichas técnicas, herramientas y utensilios propios) para el desarrollo de sus prácticas diarias?', points: 1 },
-  { id: 'i5', text: '¿Ha sido capaz de ejecutar las tareas siguiendo los procedimientos establecidos por el profesor, aplicando las técnicas idóneas en función de las prácticas a realizar?', points: 1 },
-  { id: 'i6', text: '¿Ha sido capaz de trabajar de forma limpia y ordenada durante el desarrollo de las prácticas en el taller aplicando los procedimientos establecidos?', points: 1 },
-  { id: 'i7', text: '¿Ha sido capaz de trabajar en equipo y con actitud activa participativa?', points: 1 },
-  { id: 'i8', text: '¿Ha sido capaz de aplicar las técnicas idóneas de conservación de los productos trabajados en el taller hasta el momento de su utilización?', points: 1 },
-  { id: 'i9', text: '¿Ha sido capaz de realizar las operaciones de mantenimiento y limpieza de la maquinaria y equipos utilizados, cumplimentando los registros asociados?', points: 1 },
-  { id: 'i10', text: '¿El alumno cuida su higiene personal y asiste con el uniforme completo, limpio y planchado?', points: 1 },
+  { id: 'i1', text: '¿Ha realizado operaciones de puesta en marcha de maquinaria y equipos siguiendo los procedimientos establecidos por el profesor?', points: 0.5 },
+  { id: 'i2', text: '¿Ha realizado las operaciones de mise-enplace utilizando correctamente útiles y/o herramientas, siguiendo los procedimientos establecidos por el profesor?', points: 1.0 },
+  { id: 'i3', text: '¿Ha sido capaz de Interpretar las fichas técnicas o documentación necesaria para las elaboraciones que le han tocado desarrollar?', points: 1.5 },
+  { id: 'i4', text: '¿Ha asistido con el material requerido (fichas técnicas, herramientas y utensilios propios) para el desarrollo de sus prácticas diarias?', points: 1.0 },
+  { id: 'i5', text: '¿Ha sido capaz de ejecutar las tareas siguiendo los procedimientos establecidos por el profesor, aplicando las técnicas idóneas en función de las prácticas a realizar?', points: 1.0 },
+  { id: 'i6', text: '¿Ha sido capaz de trabajar de forma limpia y ordenada durante el desarrollo de las prácticas en el taller aplicando los procedimientos establecidos?', points: 1.0 },
+  { id: 'i7', text: '¿Ha sido capaz de trabajar en equipo y con actitud activa participativa?', points: 1.5 },
+  { id: 'i8', text: '¿Ha sido capaz de aplicar las técnicas idóneas de conservación de los productos trabajados en el taller hasta el momento de su utilización?', points: 0.5 },
+  { id: 'i9', text: '¿Ha sido capaz de realizar las operaciones de mantenimiento y limpieza de la maquinaria y equipos utilizados, cumplimentando los registros asociados?', points: 1.0 },
+  { id: 'i10', text: '¿El alumno cuida su higiene personal y asiste con el uniforme completo, limpio y planchado?', points: 1.0 },
 ];
 
+export const SCORE_LEVELS = [
+    { label: 'Excelente', value: 10, color: 'bg-green-500', textColor: 'text-white' },
+    { label: 'Notable', value: 8, color: 'bg-blue-500', textColor: 'text-white' },
+    { label: 'Aprobado', value: 5, color: 'bg-yellow-500', textColor: 'text-white' },
+    { label: 'Insuficiente', value: 2, color: 'bg-red-500', textColor: 'text-white' }
+];
+
+export const PRACTICAL_EXAM_RUBRIC_T1 = [
+    { 
+        id: 'ra1', 
+        title: 'R.A.1 – Organización de procesos', 
+        weight: 0.20,
+        criteria: [
+            { id: 'ra1c1', text: 'Planificación y mise en place', levels: { 10: 'Plan completo, fases claras y ordenadas. Anticipa necesidades.', 8: 'Plan adecuado, con leves desajustes de orden o detalle.', 5: 'Plan incompleto, se olvida de fases relevantes.', 2: 'No presenta plan o es caótico.' } },
+            { id: 'ra1c2', text: 'Orden, limpieza y conservación', levels: { 10: 'Área impecable, materiales bien gestionados, propone conservación adecuada.', 8: 'Área generalmente ordenada, pequeñas faltas de higiene o conservación.', 5: 'Área desordenada, higiene básica pero descuida conservación.', 2: 'Desorden evidente, faltan medidas de higiene y conservación.' } }
+        ]
+    },
+    { 
+        id: 'ra2', 
+        title: 'R.A.2 – Técnicas culinarias tradicionales y avanzadas', 
+        weight: 0.30,
+        criteria: [
+            { id: 'ra2c1', text: 'Aplicación de técnicas básicas', levels: { 10: 'Ejecución precisa y profesional (ej. cortes uniformes, cocciones exactas).', 8: 'Ejecución correcta con leves fallos.', 5: 'Técnica básica reconocible pero con fallos de ejecución.', 2: 'Técnica incorrecta o inacabada.' } },
+            { id: 'ra2c2', text: 'Aplicación de técnicas avanzadas', levels: { 10: 'Demuestra dominio y adapta técnica al producto (ej. vacío, emulsiones).', 8: 'Correcta aplicación con leves fallos.', 5: 'Aplica técnica avanzada con dificultad, resultado justo.', 2: 'No demuestra conocimiento ni resultado adecuado.' } },
+            { id: 'ra2c3', text: 'Evaluación del resultado final', levels: { 10: 'Producto final excelente en textura, sabor, presentación.', 8: 'Buen resultado con leves mejoras posibles.', 5: 'Resultado aceptable pero poco cuidado.', 2: 'Producto mal ejecutado, incomible o inseguro.' } }
+        ]
+    },
+    { 
+        id: 'ra3', 
+        title: 'R.A.3 – Elaboración a partir de materias primas', 
+        weight: 0.30,
+        criteria: [
+            { id: 'ra3c1', text: 'Creatividad y propuestas', levels: { 10: 'Propone varias elaboraciones bien razonadas, combinaciones equilibradas.', 8: 'Propone elaboraciones correctas pero poco variadas.', 5: 'Propone solo una elaboración básica o repetitiva.', 2: 'No propone elaboraciones coherentes.' } },
+            { id: 'ra3c2', text: 'Aprovechamiento de recursos', levels: { 10: 'Máximo aprovechamiento (fondos, recortes, técnicas de reutilización).', 8: 'Aprovecha parte de los recursos, pocos desperdicios.', 5: 'Algún aprovechamiento pero genera desperdicios.', 2: 'Desaprovecha gran parte de las materias primas.' } },
+            { id: 'ra3c3', text: 'Organización y ejecución', levels: { 10: 'Trabajo fluido, tiempos bien gestionados, secuencia clara.', 8: 'Trabajo organizado con leves retrasos.', 5: 'Organización justa, se retrasa en fases importantes.', 2: 'Falta de organización, pierde mucho tiempo.' } }
+        ]
+    },
+    { 
+        id: 'ra4', 
+        title: 'R.A.4 – Necesidades alimenticias específicas', 
+        weight: 0.20,
+        criteria: [
+            { id: 'ra4c1', text: 'Identificación y selección de alimentos', levels: { 10: 'Identifica perfectamente los alimentos excluidos y selecciona sustitutos adecuados.', 8: 'Identifica la mayoría de los alimentos y propone sustitutos aceptables.', 5: 'Identificación incompleta, sustitutos poco adecuados.', 2: 'No identifica exclusiones, usa alimentos prohibidos.' } },
+            { id: 'ra4c2', text: 'Prevención de contaminación cruzada', levels: { 10: 'Cumple rigurosamente las normas (utensilios, tablas, almacenaje).', 8: 'Cumple normas con alguna falta menor.', 5: 'Cumple parcialmente, riesgo bajo de contaminación.', 2: 'No respeta normas, riesgo alto de contaminación.' } },
+            { id: 'ra4c3', text: 'Resultado final y justificación', levels: { 10: 'Elabora plato adaptado, bien presentado y justifica la importancia de la dieta.', 8: 'Elabora plato correcto, justificación básica.', 5: 'Plato aceptable pero sin coherencia total.', 2: 'Plato incorrecto o no apto para la dieta.' } }
+        ]
+    },
+];
+
+export const PRACTICAL_EXAM_RUBRIC_T2 = [
+    { 
+        id: 'ra1', 
+        title: 'R.A.1 – Organización', 
+        weight: 0.20,
+        criteria: [
+            { id: 'ra1c1', text: 'Planificación y mise en place', levels: { 10: 'Plan detallado y ajustado al tiempo.', 8: 'Correcto con leves ajustes.', 5: 'Incompleto o desordenado.', 2: 'Sin planificación.' } },
+            { id: 'ra1c2', text: 'Preparación de materias primas y utensilios', levels: { 10: 'Identifica y prepara todo correctamente.', 8: 'Pequeñas faltas en la preparación.', 5: 'Olvida elementos.', 2: 'No prepara adecuadamente.' } },
+            { id: 'ra1c3', text: 'Orden, limpieza y seguridad', levels: { 10: 'Área impecable, normas seguidas.', 8: 'Generalmente ordenado, leves fallos.', 5: 'Desorden notable pero seguro.', 2: 'Caótico, incumple normas.' } },
+            { id: 'ra1c4', text: 'Conservación intermedia', levels: { 10: 'Aplica técnicas correctas (abatidor, refrigeración).', 8: 'Conserva bien con alguna falta menor.', 5: 'Básico, descuidos.', 2: 'No aplica medidas adecuadas.' } }
+        ]
+    },
+    { 
+        id: 'ra2', 
+        title: 'R.A.2 – Técnicas', 
+        weight: 0.30,
+        criteria: [
+            { id: 'ra2c1', text: 'Métodos de cocción', levels: { 10: 'Domina ≥3 métodos, dos en mismo género.', 8: 'Aplica correctamente 3 métodos.', 5: 'Aplica 2 métodos con fallos.', 2: 'No cumple requisito.' } },
+            { id: 'ra2c2', text: 'Salsa', levels: { 10: 'Equilibrada, técnica impecable.', 8: 'Correcta, leves fallos.', 5: 'Básica o poco ligada.', 2: 'No elabora o incorrecta.' } },
+            { id: 'ra2c3', text: 'Guarniciones', levels: { 10: 'Dos variadas y coherentes.', 8: 'Dos correctas.', 5: 'Una adecuada.', 2: 'No cumple.' } },
+            { id: 'ra2c4', text: 'Técnicas de corte y preparación', levels: { 10: 'Precisión profesional.', 8: 'Correcto con leves errores.', 5: 'Poco uniforme.', 2: 'Incorrecto o inseguro.' } },
+            { id: 'ra2c5', text: 'Resultado final', levels: { 10: 'Textura, sabor y presentación excelentes.', 8: 'Buen resultado, leves mejoras.', 5: 'Aceptable, mejorable.', 2: 'Mal ejecutado o inseguro.' } }
+        ]
+    },
+    { 
+        id: 'ra3', 
+        title: 'R.A.3 – Elaboración a partir de materias primas', 
+        weight: 0.30,
+        criteria: [
+            { id: 'ra3c1', text: 'Aperitivo libre', levels: { 10: 'Creativo, equilibrado y bien ejecutado.', 8: 'Correcto, con detalles mejorables.', 5: 'Aceptable pero simple.', 2: 'Incorrecto o incompleto.' } },
+            { id: 'ra3c2', text: 'Diseño del plato principal', levels: { 10: 'Equilibrado y armónico.', 8: 'Correcto, leves fallos.', 5: 'Básico, incoherente.', 2: 'Mal planteado.' } },
+            { id: 'ra3c3', text: 'Aprovechamiento de recursos', levels: { 10: 'Máximo aprovechamiento de subproductos.', 8: 'Buen aprovechamiento.', 5: 'Algún aprovechamiento básico.', 2: 'Desaprovecha género.' } },
+            { id: 'ra3c4', text: 'Gestión del tiempo (2h)', levels: { 10: 'Organiza y termina a tiempo.', 8: 'Ligeros retrasos pero entrega.', 5: 'Retrasos importantes.', 2: 'No termina.' } }
+        ]
+    },
+    { 
+        id: 'ra4', 
+        title: 'R.A.4 – Necesidades alimenticias específicas', 
+        weight: 0.20,
+        criteria: [
+            { id: 'ra4c1', text: 'Identificación de exclusiones', levels: { 10: 'Reconoce todas las exclusiones.', 8: 'Reconoce la mayoría.', 5: 'Parcial.', 2: 'No identifica.' } },
+            { id: 'ra4c2', text: 'Sustituciones adecuadas', levels: { 10: 'Correctos y coherentes.', 8: 'Aceptables.', 5: 'Poco adecuados.', 2: 'Incorrectos.' } },
+            { id: 'ra4c3', text: 'Prevención contaminación cruzada', levels: { 10: 'Normas cumplidas rigurosamente.', 8: 'Cumple con leves fallos.', 5: 'Parcialmente correcto.', 2: 'No cumple normas.' } },
+            { id: 'ra4c4', text: 'Plato adaptado', levels: { 10: 'Adaptado y justificado.', 8: 'Correcto, justificación básica.', 5: 'Aceptable pero incoherente.', 2: 'Incorrecto o no apto.' } }
+        ]
+    },
+];
 
 export const PRODUCT_CATEGORIES = ['Carnes', 'Pescados', 'Mariscos', 'Lácteos', 'Verduras', 'Frutas', 'Congelados', 'Almacén', 'Aceites y Vinagres', 'Condimentos', 'Cereales', 'Bebidas', 'Otros'];
 export const PRODUCT_UNITS = ['kg', 'litro', 'unidad', 'gramo', 'mililitro', 'manojo'];
@@ -1549,134 +1645,4 @@ export const RAW_PRODUCTS: Array<Omit<Product, 'price'> & {allergens: string[]}>
   {"id":"prod_1393","name":"Anacardos crudos secos","category":"almacen","unit":"kg","allergens":["FRA"]},
   {"id":"prod_1394","name":"Pistachos crudos secos","category":"almacen","unit":"kg","allergens":["FRA"]},
   {"id":"prod_1395","name":"Castañas secas","category":"almacen","unit":"kg","allergens":["FRA"]},
-  {"id":"prod_1396","name":"Nueces de macadamia secas","category":"almacen","unit":"kg","allergens":["FRA"]},
-  {"id":"prod_1397","name":"Pecanas secas","category":"almacen","unit":"kg","allergens":["FRA"]},
-  {"id":"prod_1398","name":"Nueces de Brasil secas","category":"almacen","unit":"kg","allergens":["FRA"]},
-  {"id":"prod_1399","name":"Piñones secos","category":"almacen","unit":"kg","allergens":["FRA"]},
-  {"id":"prod_1400","name":"Sésamo blanco","category":"almacen","unit":"kg","allergens":["SES"]},
-  {"id":"prod_1401","name":"Sésamo negro","category":"almacen","unit":"kg","allergens":["SES"]},
-  {"id":"prod_1402","name":"Semillas de calabaza","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1403","name":"Semillas de girasol","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1404","name":"Linaza dorada","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1405","name":"Chía blanca","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1406","name":"Chía negra","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1407","name":"Coco rallado seco","category":"almacen","unit":"kg","allergens":["FRA"]},
-  {"id":"prod_1408","name":"Coco en escamas","category":"almacen","unit":"kg","allergens":["FRA"]},
-  {"id":"prod_1409","name":"Pasas sultanas secas","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1410","name":"Pasas moscatel secas","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1411","name":"Dátiles secos sin hueso","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1412","name":"Higos secos","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1413","name":"Ciruelas pasas sin hueso","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1414","name":"Albaricoques secos","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1415","name":"Manzanas secas","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1416","name":"Peras secas","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1417","name":"Mango deshidratado","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1418","name":"Piña deshidratada","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1419","name":"Plátano deshidratado","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1420","name":"Fresas deshidratadas","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1421","name":"Arándanos deshidratados","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1422","name":"Avena en hojuelas","category":"almacen","unit":"kg","allergens":["GLU"]},
-  {"id":"prod_1423","name":"Avena instantánea","category":"almacen","unit":"kg","allergens":["GLU"]},
-  {"id":"prod_1424","name":"Copos de maíz","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1425","name":"Muesli sin frutos secos","category":"almacen","unit":"kg","allergens":["GLU"]},
-  {"id":"prod_1426","name":"Muesli con frutos secos","category":"almacen","unit":"kg","allergens":["GLU","FRA"]},
-  {"id":"prod_1427","name":"Granola clásica","category":"almacen","unit":"kg","allergens":["GLU","FRA","SES"]},
-  {"id":"prod_1428","name":"Galletas maría","category":"almacen","unit":"kg","allergens":["GLU"]},
-  {"id":"prod_1429","name":"Galletas digestive","category":"almacen","unit":"kg","allergens":["GLU"]},
-  {"id":"prod_1430","name":"Galletas de avena","category":"almacen","unit":"kg","allergens":["GLU"]},
-  {"id":"prod_1431","name":"Galletas de chocolate","category":"almacen","unit":"kg","allergens":["GLU","LAC"]},
-  {"id":"prod_1432","name":"Galletas sin gluten","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1433","name":"Bizcocho base en polvo","category":"almacen","unit":"kg","allergens":["GLU","HUE","LAC"]},
-  {"id":"prod_1434","name":"Mezcla para brownie","category":"almacen","unit":"kg","allergens":["GLU","LAC"]},
-  {"id":"prod_1435","name":"Mezcla para pancakes","category":"almacen","unit":"kg","allergens":["GLU","LAC"]},
-  {"id":"prod_1436","name":"Mezcla para crepes","category":"almacen","unit":"kg","allergens":["GLU","HUE","LAC"]},
-  {"id":"prod_1437","name":"Gelatina en polvo neutra","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1438","name":"Agar-agar en polvo","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1439","name":"Pectina en polvo","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1440","name":"Carragenano","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1441","name":"Mostaza en grano","category":"almacen","unit":"kg","allergens":["MUS"]},
-  {"id":"prod_1442","name":"Mostaza en polvo","category":"almacen","unit":"kg","allergens":["MUS"]},
-  {"id":"prod_1443","name":"Pimienta negra en grano","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1444","name":"Pimienta blanca en grano","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1445","name":"Pimienta rosa","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1446","name":"Comino en grano","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1447","name":"Cúrcuma en polvo","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1448","name":"Canela en rama","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1449","name":"Canela en polvo","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1450","name":"Nuez moscada entera","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1451","name":"Nuez moscada en polvo","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1452","name":"Clavo en grano","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1453","name":"Jengibre en polvo","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1454","name":"Pimentón dulce","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1455","name":"Pimentón picante","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1456","name":"Pimentón agridulce","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1457","name":"Azafrán en hebras","category":"almacen","unit":"g","allergens":[]},
-  {"id":"prod_1458","name":"Azafrán en polvo","category":"almacen","unit":"g","allergens":[]},
-  {"id":"prod_1459","name":"Tomillo seco","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1460","name":"Orégano seco","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1461","name":"Romero seco","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1462","name":"Laurel en hojas","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1463","name":"Albahaca seca","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1464","name":"Perejil seco","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1465","name":"Cilantro seco","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1466","name":"Eneldo seco","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1467","name":"Menta seca","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1468","name":"Estragón seco","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1469","name":"Salvia seca","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1470","name":"Mezcla de hierbas provenzales","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1471","name":"Mezcla de especias para curry","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1472","name":"Mezcla de especias para ras el hanout","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1473","name":"Mezcla de especias para garam masala","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1474","name":"Mezcla de especias para chili","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1475","name":"Mezcla de especias para paella","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1476","name":"Mezcla de especias para adobo","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1477","name":"Mezcla de especias para taco","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1478","name":"Mezcla de especias para pizza","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1479","name":"Mezcla de especias para hamburguesa","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1480","name":"Mezcla gourmet de especias para cocina de autor","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1481","name":"Lecitina de soja en polvo","category":"almacen","unit":"kg","allergens":["SOY"]},
-  {"id":"prod_1482","name":"Goma xantana","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1483","name":"Goma guar","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1484","name":"Carragenano iota","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1485","name":"Agar-agar en tiras","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1486","name":"Pectina NH (para gelatinas ácidas)","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1487","name":"Melhorante para panadería","category":"almacen","unit":"kg","allergens":["GLU"]},
-  {"id":"prod_1488","name":"Enzima amilasa","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1489","name":"Enzima proteasa","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1490","name":"Levadura madre deshidratada","category":"almacen","unit":"kg","allergens":["GLU"]},
-  {"id":"prod_1491","name":"Masa madre líquida concentrada","category":"almacen","unit":"kg","allergens":["GLU"]},
-  {"id":"prod_1492","name":"Cacao nibs crudos","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1493","name":"Cacao nibs tostados","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1494","name":"Extracto de vainilla natural","category":"almacen","unit":"L","allergens":[]},
-  {"id":"prod_1495","name":"Esencia de almendra","category":"almacen","unit":"L","allergens":["FRA"]},
-  {"id":"prod_1496","name":"Esencia de limón","category":"almacen","unit":"L","allergens":[]},
-  {"id":"prod_1497","name":"Esencia de naranja","category":"almacen","unit":"L","allergens":[]},
-  {"id":"prod_1498","name":"Colorante rojo natural (remolacha)","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1499","name":"Colorante amarillo natural (cúrcuma)","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1500","name":"Colorante verde natural (espinaca)","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1501","name":"Colorante azul natural (espirulina)","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1502","name":"Colorante negro natural (carbón vegetal)","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1503","name":"Polvo para hornear sin aluminio","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1504","name":"Crema de tártaro","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1505","name":"Azúcar perlado","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1506","name":"Azúcar moreno en terrones","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1507","name":"Miel en panal","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1508","name":"Pulpa de tamarindo seca","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1509","name":"Cúrcuma entera seca","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1510","name":"Jengibre entero seco","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1511","name":"Raíz de wasabi en polvo","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1512","name":"Alga nori en hojas","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1513","name":"Alga wakame seca","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1514","name":"Alga kombu seca","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1515","name":"Alga dulse en escamas","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1516","name":"Levadura nutricional","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1517","name":"Proteína de guisante en polvo","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1518","name":"Proteína de arroz en polvo","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1519","name":"Harina de cáñamo","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1520","name":"Semillas de cáñamo peladas","category":"almacen","unit":"kg","allergens":[]},
-  {"id":"prod_1521","name":"Pan de brioche en barra","category":"almacen","unit":"unidad","allergens":["GLU","LAC","HUE"]},
-  {"id":"prod_1522","name":"Pan de leche","category":"almacen","unit":"unidad","allergens":["GLU","LAC"]},
-  {"id":"prod_1523","name":"Pan de centeno con nueces","category":"almacen","unit":"unidad","allergens":["GLU","FRA"]},
-  // FIX: Corrected malformed product entry which was causing a TypeScript error, and closed the array.
-  {"id":"prod_1524","name":"Pan de espelta con semillas","category":"almacen","unit":"unidad","allergens":["GLU", "SES"]}
 ];

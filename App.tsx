@@ -3,12 +3,13 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import AlumnosView from './components/AlumnosView';
 import Login from './components/Login';
-import { Student, NavItemType, EvaluationsState } from './types';
+import { Student, NavItemType, EvaluationsState, StudentPracticalExam } from './types';
 import { INITIAL_STUDENTS } from './constants';
 import GestionPracticaView from './components/GestionPracticaView';
 import CocinaView from './components/CocinaView';
 import GestionAppView from './components/GestionAppView';
 import GestionNotasView from './components/GestionNotasView';
+import ExamenesPracticosView from './components/ExamenesPracticosView';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -33,6 +34,16 @@ const App: React.FC = () => {
     }
   });
 
+  const [practicalExams, setPracticalExams] = useState<StudentPracticalExam[]>(() => {
+    try {
+      const saved = localStorage.getItem('teacher-dashboard-practical-exams');
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.error("Could not parse practical exams from localStorage", error);
+      return [];
+    }
+  });
+
   useEffect(() => {
     localStorage.setItem('teacher-dashboard-students', JSON.stringify(students));
   }, [students]);
@@ -40,6 +51,11 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('teacher-dashboard-evaluations', JSON.stringify(evaluations));
   }, [evaluations]);
+
+  useEffect(() => {
+    localStorage.setItem('teacher-dashboard-practical-exams', JSON.stringify(practicalExams));
+  }, [practicalExams]);
+
 
   const renderView = () => {
     switch (activeView) {
@@ -57,6 +73,12 @@ const App: React.FC = () => {
                   evaluations={evaluations} 
                   setEvaluations={setEvaluations} 
                />;
+      case 'Exámenes Prácticos':
+        return <ExamenesPracticosView 
+                  students={students}
+                  exams={practicalExams}
+                  setExams={setPracticalExams}
+                />;
       case 'Gestión Académica':
         return (
           <div className="p-8">
