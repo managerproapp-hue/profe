@@ -46,7 +46,6 @@ export type NavItemType =
   | 'Gestión de Notas' 
   | 'Exámenes Prácticos'
   | 'Gestión Académica'
-  | 'Notas del Curso'
   | 'Cocina'
   | 'Gestión de la App';
 
@@ -191,6 +190,7 @@ export interface TheoreticalExamGrades {
 export interface CourseModuleGrades {
   t1?: number;
   t2?: number;
+  t3?: number;
   rec?: number;
 }
 

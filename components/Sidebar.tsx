@@ -14,7 +14,6 @@ const ICONS: Record<NavItemType, React.ReactNode> = {
   'Gestión de Notas': <GradeIcon />,
   'Exámenes Prácticos': <CodeBracketIcon />,
   'Gestión Académica': <AcademicIcon />,
-  'Notas del Curso': <GradeIcon />,
   'Cocina': <KitchenIcon />,
   'Gestión de la App': <AppIcon />,
 };

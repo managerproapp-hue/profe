@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Student, EvaluationsState, StudentPracticalExam, TheoreticalExamGrades, CourseGrades } from '../types';
 import StudentTable from './StudentTable';
+// Fix: Changed default import to named import for StudentDetailModal to match its export type.
 import { StudentDetailModal } from './StudentDetailModal';
 import ImportModal from './ImportModal';
 import AddEditStudentModal from './EditStudentModal';

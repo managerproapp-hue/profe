@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import AlumnosView from './components/AlumnosView';
@@ -10,7 +11,6 @@ import GestionAppView from './components/GestionAppView';
 import GestionNotasView from './components/GestionNotasView';
 import ExamenesPracticosView from './components/ExamenesPracticosView';
 import GestionAcademicaView from './components/GestionAcademicaView';
-import NotasCursoView from './components/NotasCursoView';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -122,10 +122,6 @@ const App: React.FC = () => {
                   practicalExams={practicalExams}
                   academicGrades={academicGrades}
                   setAcademicGrades={setAcademicGrades}
-                />;
-      case 'Notas del Curso':
-        return <NotasCursoView
-                  students={students}
                   courseGrades={courseGrades}
                   setCourseGrades={setCourseGrades}
                 />;
