@@ -10,6 +10,24 @@ interface AccordionItemProps {
   children: React.ReactNode;
 }
 
+const BACKUP_MODULES = [
+    { key: 'teacher-dashboard-students', label: 'Fichas de Alumnos' },
+    { key: 'teacher-dashboard-evaluations', label: 'Evaluaciones de Servicios (Notas)' },
+    { key: 'teacher-dashboard-practical-exams', label: 'Exámenes Prácticos' },
+    { key: 'teacher-dashboard-academic-grades', label: 'Gestión Académica (Notas teóricas)' },
+    { key: 'cocina-catalogo-productos', label: 'Catálogo de Productos' },
+    { key: 'cocina-mi-recetario', label: 'Mi Recetario' },
+    { key: 'cocina-menus', label: 'Creación de Menús' },
+    { key: 'practicaGroups', label: 'Grupos de Prácticas' },
+    { key: 'studentGroupAssignments', label: 'Asignación de Alumnos a Grupos' },
+    { key: 'groupColors', label: 'Colores de Grupos' },
+    { key: 'practicaServices', label: 'Servicios de Prácticas' },
+    { key: 'planningAssignments', label: 'Planning de Servicios' },
+    { key: 'teacher-app-data', label: 'Datos del Profesor' },
+    { key: 'institute-app-data', label: 'Datos del Instituto' }
+];
+
+
 const AccordionItem: React.FC<AccordionItemProps> = ({ title, isOpen, onToggle, disabled = false, children }) => (
   <div className={`border rounded-lg ${disabled ? 'bg-gray-100' : 'bg-white'}`}>
     <h2>
@@ -42,6 +60,10 @@ const GestionAppView: React.FC = () => {
     const [teacherData, setTeacherData] = useState<TeacherData>({ name: '', email: '', logo: null });
     const [instituteData, setInstituteData] = useState<InstituteData>({ name: '', address: '', cif: '', logo: null });
     
+    const [backupSelection, setBackupSelection] = useState<Record<string, boolean>>(() =>
+        BACKUP_MODULES.reduce((acc, mod) => ({ ...acc, [mod.key]: true }), {})
+    );
+
     type RestoreStage = 'idle' | 'uploading' | 'restoring' | 'success' | 'error';
     const [restoreStatus, setRestoreStatus] = useState<{stage: RestoreStage, progress: number, message: string}>({
         stage: 'idle',
@@ -97,13 +119,27 @@ const GestionAppView: React.FC = () => {
         reader.readAsDataURL(file);
     }, []);
 
+    const handleBackupSelectionChange = (key: string) => {
+        setBackupSelection(prev => ({ ...prev, [key]: !prev[key] }));
+    };
+
+    const handleSelectAll = () => {
+        setBackupSelection(BACKUP_MODULES.reduce((acc, mod) => ({ ...acc, [mod.key]: true }), {}));
+    };
+    
+    const handleDeselectAll = () => {
+        setBackupSelection(BACKUP_MODULES.reduce((acc, mod) => ({ ...acc, [mod.key]: false }), {}));
+    };
+
+
     const handleDownloadBackup = () => {
         const backupData: { [key: string]: any } = {};
-        const keysToBackup = [
-            'teacher-dashboard-students', 'cocina-catalogo-productos',
-            'practicaGroups', 'studentGroupAssignments', 'groupColors',
-            'practicaServices', 'planningAssignments', 'teacher-app-data', 'institute-app-data'
-        ];
+        const keysToBackup = Object.keys(backupSelection).filter(key => backupSelection[key]);
+        
+        if (keysToBackup.length === 0) {
+            alert("Por favor, selecciona al menos un módulo de datos para descargar.");
+            return;
+        }
 
         keysToBackup.forEach(key => {
             const data = localStorage.getItem(key);
@@ -267,68 +303,74 @@ const GestionAppView: React.FC = () => {
                 </AccordionItem>
                 
                 <AccordionItem title="Backup y Restauración" isOpen={openAccordion === 'backup'} onToggle={() => handleAccordionToggle('backup')}>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div>
+                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div className="bg-gray-50 p-4 rounded-lg border">
                             <h4 className="font-bold text-lg mb-2">Crear Copia de Seguridad</h4>
-                            <p className="text-sm text-gray-600 mb-4">Descarga un archivo JSON con todos los datos de la aplicación. Guárdalo en un lugar seguro para poder restaurarlo más tarde.</p>
-                            <button onClick={handleDownloadBackup} className="w-full flex items-center justify-center gap-2 p-2 bg-green-500 text-white rounded-md hover:bg-green-600 font-semibold">
-                                <DownloadIcon className="h-5 w-5"/> Descargar Backup Completo
-                            </button>
+                            <p className="text-sm text-gray-600 mb-4">Selecciona los módulos de datos que quieres incluir en el archivo de backup.</p>
                             
-                            <div className="mt-6">
-                                <h4 className="font-bold text-lg mb-2">Restaurar Copia de Seguridad</h4>
-                                <p className="text-sm text-gray-600 mb-4">
-                                    Selecciona un archivo de backup previamente guardado. <strong className="text-red-600">Cuidado:</strong> Esto sobreescribirá todos los datos actuales de la aplicación.
-                                </p>
-                                
-                                {restoreStatus.stage === 'idle' && (
-                                    <button onClick={() => backupInputRef.current?.click()} className="w-full flex items-center justify-center gap-2 p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 font-semibold">
-                                        <UploadIcon className="h-5 w-5"/> Subir y Restaurar Backup
-                                    </button>
-                                )}
-
-                                {(restoreStatus.stage === 'uploading' || restoreStatus.stage === 'restoring') && (
-                                    <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-                                        <p className="font-semibold text-blue-800 text-center mb-2">Restaurando backup...</p>
-                                        <div className="w-full bg-gray-200 rounded-full h-4">
-                                            <div className="bg-blue-600 h-4 rounded-full transition-all duration-300" style={{ width: `${restoreStatus.progress}%` }}></div>
-                                        </div>
-                                        <div className="flex justify-between mt-1">
-                                            <p className="text-xs text-blue-700 truncate pr-2">{restoreStatus.message}</p>
-                                            <p className="text-xs font-semibold text-blue-700">{restoreStatus.progress}%</p>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {restoreStatus.stage === 'success' && (
-                                    <div className="bg-green-50 border border-green-200 p-4 rounded-lg text-center">
-                                        <p className="font-semibold text-green-800">{restoreStatus.message}</p>
-                                    </div>
-                                )}
-
-                                {restoreStatus.stage === 'error' && (
-                                    <div className="bg-red-50 border border-red-200 p-4 rounded-lg text-center">
-                                        <p className="font-semibold text-red-800 mb-3">{restoreStatus.message}</p>
-                                        <button onClick={() => setRestoreStatus({ stage: 'idle', progress: 0, message: '' })} className="bg-red-500 text-white text-sm font-semibold py-1 px-4 rounded-md hover:bg-red-600">
-                                            Intentar de Nuevo
-                                        </button>
-                                    </div>
-                                )}
-                                <input type="file" ref={backupInputRef} onChange={handleUploadBackup} accept=".json" className="hidden"/>
+                            <div className="space-y-2 max-h-60 overflow-y-auto border p-3 rounded-md bg-white mb-3">
+                                {BACKUP_MODULES.map(module => (
+                                    <label key={module.key} className="flex items-center text-sm">
+                                        <input
+                                            type="checkbox"
+                                            checked={backupSelection[module.key] || false}
+                                            onChange={() => handleBackupSelectionChange(module.key)}
+                                            className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                                        />
+                                        <span className="ml-2 text-gray-700">{module.label}</span>
+                                    </label>
+                                ))}
                             </div>
+
+                            <div className="flex gap-2 mb-4">
+                                <button onClick={handleSelectAll} className="text-xs font-semibold text-blue-600 hover:underline">Seleccionar todo</button>
+                                <button onClick={handleDeselectAll} className="text-xs font-semibold text-blue-600 hover:underline">Deseleccionar todo</button>
+                            </div>
+                            
+                            <button onClick={handleDownloadBackup} className="w-full flex items-center justify-center gap-2 p-2 bg-green-500 text-white rounded-md hover:bg-green-600 font-semibold">
+                                <DownloadIcon className="h-5 w-5"/> Descargar Backup
+                            </button>
                         </div>
-                        <div>
-                            <h4 className="font-bold text-lg mb-2">¿Qué se incluye en el backup?</h4>
-                            <p className="text-sm text-gray-600 mb-4">El archivo de backup contiene la siguiente información:</p>
-                             <ul className="text-sm list-disc list-inside bg-gray-50 p-4 rounded-md border">
-                                <li>Fichas de todos los <strong>alumnos</strong> y sus datos.</li>
-                                <li>Catálogo completo de <strong>productos</strong> de cocina.</li>
-                                <li>Configuración de <strong>grupos y partidas</strong> de prácticas.</li>
-                                <li>Todos los <strong>servicios</strong> creados para el curso.</li>
-                                <li><strong>Planificación</strong> y asignación de roles en servicios.</li>
-                                <li className="font-semibold text-teal-700">Datos del <strong>profesor</strong> y su logo.</li>
-                                <li className="font-semibold text-teal-700">Datos del <strong>instituto</strong> y su logo.</li>
-                            </ul>
+                        <div className="bg-gray-50 p-4 rounded-lg border">
+                            <h4 className="font-bold text-lg mb-2">Restaurar Copia de Seguridad</h4>
+                            <p className="text-sm text-gray-600 mb-4">
+                                Selecciona un archivo de backup. <strong className="text-red-600">Cuidado:</strong> Esto sobreescribirá todos los datos actuales.
+                            </p>
+                            
+                            {restoreStatus.stage === 'idle' && (
+                                <button onClick={() => backupInputRef.current?.click()} className="w-full flex items-center justify-center gap-2 p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 font-semibold">
+                                    <UploadIcon className="h-5 w-5"/> Subir y Restaurar
+                                </button>
+                            )}
+
+                            {(restoreStatus.stage === 'uploading' || restoreStatus.stage === 'restoring') && (
+                                <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                                    <p className="font-semibold text-blue-800 text-center mb-2">Restaurando...</p>
+                                    <div className="w-full bg-gray-200 rounded-full h-4">
+                                        <div className="bg-blue-600 h-4 rounded-full transition-all duration-300" style={{ width: `${restoreStatus.progress}%` }}></div>
+                                    </div>
+                                    <div className="flex justify-between mt-1">
+                                        <p className="text-xs text-blue-700 truncate pr-2">{restoreStatus.message}</p>
+                                        <p className="text-xs font-semibold text-blue-700">{restoreStatus.progress}%</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {restoreStatus.stage === 'success' && (
+                                <div className="bg-green-50 border border-green-200 p-4 rounded-lg text-center">
+                                    <p className="font-semibold text-green-800">{restoreStatus.message}</p>
+                                </div>
+                            )}
+
+                            {restoreStatus.stage === 'error' && (
+                                <div className="bg-red-50 border border-red-200 p-4 rounded-lg text-center">
+                                    <p className="font-semibold text-red-800 mb-3">{restoreStatus.message}</p>
+                                    <button onClick={() => setRestoreStatus({ stage: 'idle', progress: 0, message: '' })} className="bg-red-500 text-white text-sm font-semibold py-1 px-4 rounded-md hover:bg-red-600">
+                                        Intentar de Nuevo
+                                    </button>
+                                </div>
+                            )}
+                            <input type="file" ref={backupInputRef} onChange={handleUploadBackup} accept=".json" className="hidden"/>
                         </div>
                    </div>
                 </AccordionItem>

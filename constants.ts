@@ -210,6 +210,34 @@ export const PRACTICAL_EXAM_RUBRIC_T2 = [
     },
 ];
 
+export const ACADEMIC_EVALUATION_STRUCTURE = {
+  trimestres: [
+    {
+      name: "1º Trimestre",
+      instruments: [
+        { name: "Examen 1", type: "manual", key: "examen1", weight: 0.10 },
+        { name: "Examen 2", type: "manual", key: "examen2", weight: 0.10 },
+        { name: "Servicios 1", type: "calculated", key: "servicios1", weight: 0.15 },
+        { name: "Ex. Practico 1", type: "calculated", key: "exPractico1", weight: 0.15 },
+      ]
+    },
+    {
+      name: "2º Trimestre",
+      instruments: [
+        { name: "Examen 3", type: "manual", key: "examen3", weight: 0.10 },
+        { name: "Examen 4", type: "manual", key: "examen4", weight: 0.10 },
+        { name: "Servicios 2", type: "calculated", key: "servicios2", weight: 0.15 },
+        { name: "Ex. Practico 2", type: "calculated", key: "exPractico2", weight: 0.15 },
+      ]
+    }
+  ],
+  recuperacion: {
+    name: "Recuperación",
+    type: "manual",
+    key: "recuperacion"
+  }
+};
+
 export const PRODUCT_CATEGORIES = ['Carnes', 'Pescados', 'Mariscos', 'Lácteos', 'Verduras', 'Frutas', 'Congelados', 'Almacén', 'Aceites y Vinagres', 'Condimentos', 'Cereales', 'Bebidas', 'Otros'];
 export const PRODUCT_UNITS = ['kg', 'litro', 'unidad', 'gramo', 'mililitro', 'manojo'];
 export const ALLERGENS = ['Gluten', 'Lactosa', 'Frutos Secos', 'Pescado', 'Huevo', 'Soja', 'Marisco', 'Apio', 'Mostaza', 'Sésamo', 'Sulfitos', 'Altramuces', 'Moluscos', 'Cacahuete'];

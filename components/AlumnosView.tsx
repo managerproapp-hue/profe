@@ -1,7 +1,5 @@
-
-
 import React, { useState, useMemo, useCallback } from 'react';
-import { Student, EvaluationsState } from '../types';
+import { Student, EvaluationsState, StudentPracticalExam, TheoreticalExamGrades } from '../types';
 import StudentTable from './StudentTable';
 import { StudentDetailModal } from './StudentDetailModal';
 import ImportModal from './ImportModal';
@@ -13,6 +11,8 @@ interface AlumnosViewProps {
   students: Student[];
   setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
   evaluations: EvaluationsState;
+  practicalExams: StudentPracticalExam[];
+  academicGrades: {[nre: string]: TheoreticalExamGrades};
 }
 
 type ViewMode = 'grid' | 'list';
@@ -39,7 +39,7 @@ const StudentCard: React.FC<{ student: Student; index: number; onSelect: () => v
 );
 
 
-const AlumnosView: React.FC<AlumnosViewProps> = ({ students, setStudents, evaluations }) => {
+const AlumnosView: React.FC<AlumnosViewProps> = ({ students, setStudents, evaluations, practicalExams, academicGrades }) => {
   const [studentToView, setStudentToView] = useState<Student | null>(null);
   const [studentToEdit, setStudentToEdit] = useState<Student | null>(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -264,6 +264,8 @@ const AlumnosView: React.FC<AlumnosViewProps> = ({ students, setStudents, evalua
         <StudentDetailModal
           student={studentToView}
           evaluations={evaluations}
+          practicalExams={practicalExams}
+          academicGrades={academicGrades}
           onClose={() => setStudentToView(null)}
           onEdit={(s) => {
             setStudentToView(null);

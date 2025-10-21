@@ -1,15 +1,15 @@
-
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import AlumnosView from './components/AlumnosView';
 import Login from './components/Login';
-import { Student, NavItemType, EvaluationsState, StudentPracticalExam } from './types';
+import { Student, NavItemType, EvaluationsState, StudentPracticalExam, TheoreticalExamGrades } from './types';
 import { INITIAL_STUDENTS } from './constants';
 import GestionPracticaView from './components/GestionPracticaView';
 import CocinaView from './components/CocinaView';
 import GestionAppView from './components/GestionAppView';
 import GestionNotasView from './components/GestionNotasView';
 import ExamenesPracticosView from './components/ExamenesPracticosView';
+import GestionAcademicaView from './components/GestionAcademicaView';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -44,6 +44,16 @@ const App: React.FC = () => {
     }
   });
 
+  const [academicGrades, setAcademicGrades] = useState<{[nre: string]: TheoreticalExamGrades}>(() => {
+    try {
+      const saved = localStorage.getItem('teacher-dashboard-academic-grades');
+      return saved ? JSON.parse(saved) : {};
+    } catch (error) {
+      console.error("Could not parse academic grades from localStorage", error);
+      return {};
+    }
+  });
+
   useEffect(() => {
     localStorage.setItem('teacher-dashboard-students', JSON.stringify(students));
   }, [students]);
@@ -56,11 +66,21 @@ const App: React.FC = () => {
     localStorage.setItem('teacher-dashboard-practical-exams', JSON.stringify(practicalExams));
   }, [practicalExams]);
 
+  useEffect(() => {
+    localStorage.setItem('teacher-dashboard-academic-grades', JSON.stringify(academicGrades));
+  }, [academicGrades]);
+
 
   const renderView = () => {
     switch (activeView) {
       case 'Alumnos':
-        return <AlumnosView students={students} setStudents={setStudents} evaluations={evaluations} />;
+        return <AlumnosView 
+                  students={students} 
+                  setStudents={setStudents} 
+                  evaluations={evaluations} 
+                  practicalExams={practicalExams}
+                  academicGrades={academicGrades}
+                />;
       case 'Gestión Práctica':
         return <GestionPracticaView students={students} />;
       case 'Cocina':
@@ -80,14 +100,21 @@ const App: React.FC = () => {
                   setExams={setPracticalExams}
                 />;
       case 'Gestión Académica':
-        return (
-          <div className="p-8">
-            <h1 className="text-3xl font-bold text-gray-800">{activeView}</h1>
-            <p className="mt-4 text-gray-600">Esta sección está en construcción.</p>
-          </div>
-        );
+        return <GestionAcademicaView
+                  students={students}
+                  evaluations={evaluations}
+                  practicalExams={practicalExams}
+                  academicGrades={academicGrades}
+                  setAcademicGrades={setAcademicGrades}
+                />;
       default:
-        return <AlumnosView students={students} setStudents={setStudents} evaluations={evaluations} />;
+        return <AlumnosView 
+                  students={students} 
+                  setStudents={setStudents} 
+                  evaluations={evaluations} 
+                  practicalExams={practicalExams}
+                  academicGrades={academicGrades}
+                />;
     }
   };
   

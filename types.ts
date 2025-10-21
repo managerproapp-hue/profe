@@ -1,4 +1,3 @@
-
 export interface Interview {
   id: string;
   date: string;
@@ -183,4 +182,13 @@ export interface StudentPracticalExam {
   startTime?: string;
   endTime?: string;
   finalScore?: number;
+}
+
+// --- GESTIÓN ACADÉMICA TYPES ---
+export interface TheoreticalExamGrades {
+  examen1?: number;
+  examen2?: number;
+  examen3?: number;
+  examen4?: number;
+  recuperacion?: number;
 }
