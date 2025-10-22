@@ -4,11 +4,11 @@ import { TeacherData, InstituteData } from './types';
 declare var jspdf: any;
 declare var XLSX: any;
 
-// Fix: Augment the global jspdf namespace to reflect jspdf-autotable v4, which is compatible with jspdf v2.
-// The autoTable function is no longer a method on the jsPDF instance.
+// Augment the jsPDF interface to include the autoTable method from the plugin
 declare global {
   namespace jspdf {
     interface jsPDF {
+      autoTable: (options: any) => jsPDF;
       lastAutoTable: { finalY: number };
       putTotalPages: (pageExpression: string) => jsPDF;
     }
@@ -58,7 +58,7 @@ const getImageDimensions = (base64: string): Promise<{ width: number; height: nu
  * @param options PDF orientation options.
  */
 export const downloadPdfWithTables = async (title: string, fileName: string, tables: PdfTableConfig[], options: PdfOptions = {}) => {
-    if (typeof jspdf === 'undefined' || typeof jspdf.autoTable === 'undefined') {
+    if (typeof jspdf === 'undefined' || typeof (new jspdf.jsPDF()).autoTable === 'undefined') {
         alert("La librería para generar PDF (jsPDF/autoTable) no está disponible. Por favor, recargue la página.");
         return;
     }
@@ -94,7 +94,7 @@ export const downloadPdfWithTables = async (title: string, fileName: string, tab
     let startY: number | undefined = headerHeight;
     
     tables.forEach((tableConfig, index) => {
-        jspdf.autoTable(doc, {
+        doc.autoTable({
             head: tableConfig.head,
             body: tableConfig.body,
             startY: startY,
