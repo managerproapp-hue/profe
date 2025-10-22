@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { Recipe, Product, RecipeIngredient, RecipeStep, Elaboration } from '../types';
 import { ALLERGENS, PRODUCT_UNITS, PRODUCT_CATEGORIES, RECIPE_CATEGORIES } from '../constants';
 import { PencilIcon, PlusIcon, TrashIcon, BackIcon, UploadIcon, EyeIcon, DownloadIcon, XIcon, CheckIcon, ClipboardIcon, CodeBracketIcon, SearchIcon, LinkIcon } from './icons';
-import { downloadPdfFromHtml } from './printUtils';
+import { downloadPdfWithTables } from './printUtils';
 
 // --- HELPER FUNCTIONS ---
 const uuidv4 = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -324,65 +324,64 @@ const RecipeFormView: React.FC<{
     }, [formData.elaborations, products]);
     
     const handleDownloadRecipe = () => {
-        let html = `
-            ${formData.imageUrl ? `<div style="text-align: center; margin-bottom: 1.5rem;"><img src="${formData.imageUrl}" alt="${formData.name}" style="max-width: 100%; max-height: 300px; height: auto; display: inline-block; border-radius: 0.5rem;" /></div>` : ''}
+        const tables: any[] = [];
+    
+        if (formData.imageUrl) {
+            // This is a simplified way to add an image. jspdf-autotable has limited, direct image support.
+            // We create a single-cell table for it.
+            tables.push({
+                body: [[{ image: formData.imageUrl, styles: { halign: 'center', minCellHeight: 50 } }]],
+                options: { theme: 'plain' }
+            });
+        }
+    
+        if (formData.description) {
+            tables.push({
+                head: [['Descripción']],
+                body: [[formData.description]],
+                options: { headStyles: { fontStyle: 'bold', fillColor: '#f3f4f6', textColor: '#1f2937' } }
+            });
+        }
+    
+        formData.elaborations.forEach(elab => {
+            tables.push({
+                head: [[{ content: elab.name, styles: { fontStyle: 'bold', fontSize: 14, fillColor: '#f0fdf4', textColor: '#15803d' } }]],
+            });
+    
+            const ingredientsBody = elab.ingredients.map(ing => {
+                const p = products.find(prod => prod.id === ing.productId);
+                return [p?.name || 'N/A', `${ing.quantity.toFixed(2)}`, ing.unit];
+            });
+    
+            if (ingredientsBody.length > 0) {
+                tables.push({
+                    head: [['Ingredientes', 'Cantidad', 'Unidad']],
+                    body: ingredientsBody,
+                    columnStyles: { 0: { cellWidth: 'auto' }, 1: { cellWidth: 25 }, 2: { cellWidth: 20 } }
+                });
+            }
             
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-                <tr>
-                    <td style="vertical-align: bottom; padding: 0;">
-                        <p style="font-size: 0.875rem; color: #4f46e5; font-weight: 600; margin: 0;">${formData.category}</p>
-                        <h2 style="font-size: 2.25rem; font-weight: bold; margin: 0; line-height: 1.1;">${formData.name}</h2>
-                    </td>
-                    <td style="vertical-align: bottom; text-align: right; padding: 0;">
-                        <p style="font-size: 1.125rem; font-weight: 600; margin: 0;">Para ${formData.servings} raciones</p>
-                    </td>
-                </tr>
-            </table>
-            <div style="height: 1px; background-color: #eee; margin-bottom: 20px;"></div>
-            
-            ${formData.description ? `<div style="margin-bottom: 1.5rem; page-break-inside: avoid;">
-                <h3 style="font-size: 1.25rem; font-weight: bold; border-bottom: 1px solid #ddd; padding-bottom: 0.5rem; margin-bottom: 0.75rem;">Descripción</h3>
-                <p style="color: #4b5563;">${formData.description.replace(/\n/g, '<br>')}</p>
-            </div>` : ''}
-        `;
+            const stepsBody = elab.steps.map((step, i) => [`${i + 1}. ${step.description}`]);
     
-        html += formData.elaborations.map(elab => `
-            <div style="page-break-inside: avoid; margin-bottom: 2rem;">
-                <h3 style="font-size: 1.5rem; font-weight: bold; color: #166534; background-color: #f0fdf4; padding: 0.5rem 1rem; border-left: 4px solid #22c55e; border-radius: 0.25rem;">${elab.name}</h3>
-                <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
-                    <tr style="vertical-align: top;">
-                        <td style="width: 40%; padding-right: 15px;">
-                            <h4 style="font-size: 1.125rem; font-weight: 600; margin-top: 0; margin-bottom: 0.75rem;">Ingredientes</h4>
-                            <table style="width: 100%; font-size: 0.875rem; border-collapse: collapse;">
-                                ${elab.ingredients.map(ing => {
-                                    const p = products.find(prod => prod.id === ing.productId);
-                                    return `<tr>
-                                        <td style="padding: 0.5rem 0.25rem; border-bottom: 1px solid #f3f4f6;">${p?.name || 'N/A'}</td>
-                                        <td style="padding: 0.5rem 0.25rem; border-bottom: 1px solid #f3f4f6; text-align: right; font-weight: 500; white-space: nowrap;">${ing.quantity.toFixed(2)} ${ing.unit}</td>
-                                    </tr>`;
-                                }).join('')}
-                            </table>
-                        </td>
-                        <td style="width: 60%; padding-left: 15px; border-left: 1px solid #eee;">
-                            <h4 style="font-size: 1.125rem; font-weight: 600; margin-top: 0; margin-bottom: 0.75rem;">Pasos</h4>
-                            <ol style="padding-left: 1.25rem; margin: 0; font-size: 0.875rem;">
-                                ${elab.steps.map(step => `<li style="margin-bottom: 0.75rem; color: #374151; line-height: 1.5;">${step.description}</li>`).join('')}
-                            </ol>
-                        </td>
-                    </tr>
-                </table>
-            </div>
-        `).join('');
+            if (stepsBody.length > 0 && stepsBody.some(row => row[0].trim().length > 2)) {
+                tables.push({
+                    head: [['Pasos']],
+                    body: stepsBody,
+                });
+            }
+        });
     
-         if (formData.serviceNotes) {
-            html += `<div style="page-break-inside: avoid; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #eee;">
-                <h3 style="font-size: 1.25rem; font-weight: bold; margin-bottom: 0.75rem;">Notas de Servicio</h3>
-                <p style="color: #4b5563;">${formData.serviceNotes.replace(/\n/g, '<br>')}</p>
-            </div>`;
-         }
+        if (formData.serviceNotes) {
+            tables.push({
+                head: [['Notas de Servicio / Emplatado']],
+                body: [[formData.serviceNotes]],
+                options: { headStyles: { fontStyle: 'bold', fillColor: '#f3f4f6', textColor: '#1f2937' } }
+            });
+        }
     
+        const title = `Ficha Técnica: ${formData.name} (${formData.servings} pax)`;
         const fileName = `ficha_tecnica_${formData.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}`;
-        downloadPdfFromHtml(`Ficha Técnica: ${formData.name}`, html, fileName);
+        downloadPdfWithTables(title, fileName, tables);
     };
 
     return (

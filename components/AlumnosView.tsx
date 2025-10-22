@@ -114,8 +114,16 @@ const AlumnosView: React.FC<AlumnosViewProps> = ({ students, setStudents, evalua
       s.grupo,
       s.emailOficial,
     ]);
+    
+    const columnStyles = {
+        0: { cellWidth: 10 },
+        1: { cellWidth: 'auto' },
+        2: { cellWidth: 25 },
+        3: { cellWidth: 20 },
+        4: { cellWidth: 45 },
+    };
 
-    downloadPdfWithTables('Listado de Alumnos', 'listado_alumnos', [{ head, body }]);
+    downloadPdfWithTables('Listado de Alumnos', 'listado_alumnos', [{ head, body, columnStyles }]);
   };
 
   const handleExportXlsx = () => {

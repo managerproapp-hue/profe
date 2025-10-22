@@ -199,7 +199,15 @@ const CatalogoProductosView: React.FC = () => {
             p.allergens.join(', ')
         ]);
         
-        downloadPdfWithTables('Catálogo de Productos', 'catalogo_productos', [{ head, body }]);
+        const columnStyles = {
+            0: { cellWidth: 'auto' },
+            1: { cellWidth: 35 },
+            2: { cellWidth: 20 },
+            3: { cellWidth: 20 },
+            4: { cellWidth: 'auto' }
+        };
+
+        downloadPdfWithTables('Catálogo de Productos', 'catalogo_productos', [{ head, body, columnStyles }]);
         setIsExportMenuOpen(false);
     };
 

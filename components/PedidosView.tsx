@@ -101,10 +101,13 @@ const PedidoDetalle: React.FC<{
             const body = items
                 .sort((a,b) => a.name.localeCompare(b.name))
                 .map(item => [item.name, item.quantity.toFixed(3), item.unit]);
+            
+            const columnStyles = { 0: { cellWidth: 'auto' }, 1: { cellWidth: 25 }, 2: { cellWidth: 25 } };
 
             return {
                 head: [[{ content: category, colSpan: 3, styles: { halign: 'center', fontStyle: 'bold', fillColor: '#f0f9ff' } }]],
                 body: [...head, ...body],
+                columnStyles: columnStyles,
                 options: {
                     theme: 'grid'
                 }

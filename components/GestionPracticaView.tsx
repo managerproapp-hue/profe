@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Student } from '../types';
 import { UsersIcon, GroupIcon, ServiceIcon, CalendarIcon, TrashIcon, CloseIcon, CogIcon, PlusIcon, PencilIcon, CheckIcon, XIcon, DownloadIcon } from './icons';
@@ -409,6 +408,7 @@ const PlanningTab: React.FC<{
     const handleDownloadPdfPlanning = (service: Service) => {
         const serviceAssignments = planningAssignments[service.id] || {};
         const tables = [];
+        const commonColumnStyles = { 0: { cellWidth: 'auto' }, 1: { cellWidth: 60 } };
 
         // Leaders Table
         const leadersBody = LEADER_ROLES.map(role => {
@@ -419,6 +419,7 @@ const PlanningTab: React.FC<{
         tables.push({
             head: [['Líderes del Servicio']],
             body: leadersBody,
+            columnStyles: commonColumnStyles,
             options: { headStyles: { fillColor: '#d1fae5', textColor: '#065f46', fontStyle: 'bold' } }
         });
 
@@ -435,6 +436,7 @@ const PlanningTab: React.FC<{
                 tables.push({
                     head: [[groupName, 'Rol']],
                     body: body,
+                    columnStyles: commonColumnStyles,
                     options: { headStyles: { fillColor: '#f0fdf4', textColor: '#15803d' } }
                 });
             });
@@ -453,6 +455,7 @@ const PlanningTab: React.FC<{
                 tables.push({
                     head: [[groupName, 'Rol']],
                     body: body,
+                    columnStyles: commonColumnStyles,
                     options: { headStyles: { fillColor: '#dbeafe', textColor: '#1e40af' } }
                 });
             });
@@ -648,6 +651,7 @@ const PartidasYGruposTab: React.FC<{
         
         const head = [[`#`, `Nombre Completo`]];
         const body = members.map((m, i) => [String(i + 1), `${m.apellido1} ${m.apellido2}, ${m.nombre}`]);
+        const columnStyles = { 0: { cellWidth: 10 }, 1: { cellWidth: 'auto' }};
 
         return {
             head: [[{ content: `${group} (${members.length} miembros)`, colSpan: 2, styles: { halign: 'center', fontStyle: 'bold' } }]],
@@ -655,6 +659,7 @@ const PartidasYGruposTab: React.FC<{
                 ...head, // Sub-header
                 ...body
             ],
+            columnStyles,
             options: {
                 theme: 'grid'
             }
