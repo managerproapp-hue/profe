@@ -67,7 +67,6 @@ export const downloadPdfWithTables = async (title: string, fileName: string, tab
     const { orientation = 'portrait' } = options;
     const doc = new jsPDF({ orientation, unit: 'mm', format: 'a4' });
     
-    const totalPagesExp = '{total_pages_count}';
     const headerHeight = 25;
     const footerHeight = 15;
 
@@ -134,7 +133,7 @@ export const downloadPdfWithTables = async (title: string, fileName: string, tab
                 doc.setFont('helvetica', 'normal');
                 doc.setTextColor(120, 120, 120);
 
-                const pageNumText = `Página ${data.pageNumber} de ${totalPagesExp}`;
+                const pageNumText = `Página ${data.pageNumber}`;
                 doc.text(`${instituteData.name} - ${teacherData.name}`, data.settings.margin.left, footerY);
                 doc.text(pageNumText, doc.internal.pageSize.getWidth() / 2, footerY, { align: 'center' });
                 doc.text(new Date().toLocaleDateString(), doc.internal.pageSize.getWidth() - data.settings.margin.right, footerY, { align: 'right' });
@@ -142,11 +141,6 @@ export const downloadPdfWithTables = async (title: string, fileName: string, tab
         });
         startY = doc.lastAutoTable.finalY + 8; // Space between tables
     });
-
-    // Replace total page count placeholder
-    if (typeof (doc as any).putTotalPages === 'function') {
-        (doc as any).putTotalPages(totalPagesExp);
-    }
     
     doc.save(`${fileName}.pdf`);
 };
