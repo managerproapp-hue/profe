@@ -1599,3 +1599,4 @@ export const RAW_PRODUCTS: Array<Omit<Product, 'price'> & {allergens: string[]}>
   {"id":"prod_1321","name":"Eritritol","category":"almacen","unit":"kg","allergens":[]},
   {"id":"prod_1322","name":"Xilitol","category":"almacen","unit":"kg","allergens":[]},
   {"id":"prod_1323","name":"Lentejas secas","category":"almacen","unit":"kg","allergens":[]},
+];
