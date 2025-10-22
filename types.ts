@@ -41,6 +41,7 @@ export interface Product {
 
 
 export type NavItemType = 
+  | 'Dashboard'
   | 'Alumnos' 
   | 'Gestión Práctica' 
   | 'Gestión de Notas' 

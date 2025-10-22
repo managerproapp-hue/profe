@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import Sidebar from './components/Sidebar';
+// FIX: Module '"./components/Sidebar"' has no default export. Using a named import instead.
+import { Sidebar } from './components/Sidebar';
 import AlumnosView from './components/AlumnosView';
 import Login from './components/Login';
 import { Student, NavItemType, EvaluationsState, StudentPracticalExam, TheoreticalExamGrades, CourseGrades } from './types';
@@ -11,10 +12,11 @@ import GestionAppView from './components/GestionAppView';
 import GestionNotasView from './components/GestionNotasView';
 import ExamenesPracticosView from './components/ExamenesPracticosView';
 import GestionAcademicaView from './components/GestionAcademicaView';
+import DashboardView from './components/DashboardView';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [activeView, setActiveView] = useState<NavItemType>('Alumnos');
+  const [activeView, setActiveView] = useState<NavItemType>('Dashboard');
   const [students, setStudents] = useState<Student[]>(() => {
     try {
       const savedStudents = localStorage.getItem('teacher-dashboard-students');
@@ -88,6 +90,8 @@ const App: React.FC = () => {
 
   const renderView = () => {
     switch (activeView) {
+      case 'Dashboard':
+        return <DashboardView students={students} evaluations={evaluations} setActiveView={setActiveView} />;
       case 'Alumnos':
         return <AlumnosView 
                   students={students} 
@@ -126,14 +130,7 @@ const App: React.FC = () => {
                   setCourseGrades={setCourseGrades}
                 />;
       default:
-        return <AlumnosView 
-                  students={students} 
-                  setStudents={setStudents} 
-                  evaluations={evaluations} 
-                  practicalExams={practicalExams}
-                  academicGrades={academicGrades}
-                  courseGrades={courseGrades}
-                />;
+        return <DashboardView students={students} evaluations={evaluations} setActiveView={setActiveView} />;
     }
   };
   

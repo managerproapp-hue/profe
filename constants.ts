@@ -65,6 +65,7 @@ export const INITIAL_STUDENTS: Student[] = [
 ];
 
 export const NAV_ITEMS: NavItemType[] = [
+  'Dashboard',
   'Alumnos',
   'Gestión Práctica',
   'Gestión de Notas',

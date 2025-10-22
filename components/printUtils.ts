@@ -4,12 +4,11 @@ import { TeacherData, InstituteData } from './types';
 declare var jspdf: any;
 declare var XLSX: any;
 
-// Fix: Augment the global jspdf namespace instead of a module, as jspdf is loaded via CDN.
-// This resolves the "module 'jspdf' cannot be found" error.
+// Fix: Augment the global jspdf namespace to reflect jspdf-autotable v4, which is compatible with jspdf v2.
+// The autoTable function is no longer a method on the jsPDF instance.
 declare global {
   namespace jspdf {
     interface jsPDF {
-      autoTable: (options: any) => jsPDF;
       lastAutoTable: { finalY: number };
       putTotalPages: (pageExpression: string) => jsPDF;
     }
@@ -59,7 +58,7 @@ const getImageDimensions = (base64: string): Promise<{ width: number; height: nu
  * @param options PDF orientation options.
  */
 export const downloadPdfWithTables = async (title: string, fileName: string, tables: PdfTableConfig[], options: PdfOptions = {}) => {
-    if (typeof jspdf === 'undefined' || typeof jspdf.jsPDF.API.autoTable === 'undefined') {
+    if (typeof jspdf === 'undefined' || typeof jspdf.autoTable === 'undefined') {
         alert("La librería para generar PDF (jsPDF/autoTable) no está disponible. Por favor, recargue la página.");
         return;
     }
@@ -95,7 +94,7 @@ export const downloadPdfWithTables = async (title: string, fileName: string, tab
     let startY: number | undefined = headerHeight;
     
     tables.forEach((tableConfig, index) => {
-        doc.autoTable({
+        jspdf.autoTable(doc, {
             head: tableConfig.head,
             body: tableConfig.body,
             startY: startY,
